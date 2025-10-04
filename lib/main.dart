@@ -28,13 +28,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Smart Production App',
+      title: 'Zinus Production',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
       home: const HomeScreen(),
-      debugShowCheckedModeBanner: false, // Sembunyikan banner debug
+      debugShowCheckedModeBanner: false,
     );
   }
 }
