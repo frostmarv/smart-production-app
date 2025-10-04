@@ -1,0 +1,140 @@
+workflows:
+  # Android Build Workflow
+  android-workflow:
+    name: Android Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      android_signing:
+        - keystore_reference
+      groups:
+        - app_credentials
+      vars:
+        PACKAGE_NAME: "com.zinus.production.smart_production_app"
+      flutter: stable
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Build APK
+        script: |
+          flutter build apk --release
+      - name: Build App Bundle
+        script: |
+          flutter build appbundle --release
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+      # Uncomment untuk publish ke Google Play
+      # google_play:
+      #   credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+      #   track: internal
+      #   submit_as_draft: true
+
+  # iOS Build Workflow
+  ios-workflow:
+    name: iOS Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.zinus.production.smartProductionApp
+      groups:
+        - app_credentials
+      vars:
+        BUNDLE_ID: "com.zinus.production.smartProductionApp"
+        XCODE_WORKSPACE: "Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Install pods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Build ipa for distribution
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+      # Uncomment untuk publish ke App Store
+      # app_store_connect:
+      #   auth: integration
+      #   submit_to_testflight: true
+      #   beta_groups:
+      #     - Internal Testers
+      #   submit_to_app_store: false
+
+  # Development Build (Debug)
+  dev-workflow:
+    name: Development Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      groups:
+        - app_credentials
+      flutter: stable
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'develop'
+          include: true
+          source: true
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Run tests
+        script: |
+          flutter test
+        ignore_failure: true
+      - name: Build debug APK
+        script: |
+          flutter build apk --debug
+    artifacts:
+      - build/**/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: false
+          failure: true

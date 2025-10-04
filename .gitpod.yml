@@ -1,0 +1,27 @@
+image: gitpod/workspace-full
+
+tasks:
+  - name: Install Flutter
+    init: |
+      # Download Flutter SDK (versi stabil untuk Linux)
+      FLUTTER_VERSION="3.19.5"
+      curl -L https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz | tar -xJ -C /home/gitpod
+
+    command: |
+      # Tambahkan Flutter ke PATH
+      export PATH="/home/gitpod/flutter/bin:$PATH"
+      echo 'export PATH="/home/gitpod/flutter/bin:$PATH"' >> /home/gitpod/.bashrc
+
+      # Aktifkan web
+      flutter config --enable-web
+
+      # Cek instalasi
+      flutter --version
+
+  - name: Setup Project
+    init: flutter pub get
+    command: echo "Ready! Run 'flutter run -d web-server' to start the app."
+
+ports:
+  - port: 8080
+    onOpen: open-browser

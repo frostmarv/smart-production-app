@@ -1,0 +1,53 @@
+name: smart_production_app
+description: "Aplikasi produksi digital dengan fitur offline & integrasi JDE"
+
+# Jangan publish ke pub.dev (karena internal)
+publish_to: 'none'
+
+# Versi aplikasi
+# Android: versionName = 1.0.0, versionCode = 1
+# iOS: CFBundleShortVersionString = 1.0.0, CFBundleVersion = 1
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # HTTP client (untuk kirim data ke backend)
+  http: ^1.2.2
+
+  # Environment variables
+  flutter_dotenv: ^5.1.0
+
+  # Format tanggal, waktu, angka
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  # Aktifkan Material Design (termasuk ikon)
+  uses-material-design: true
+
+  # Daftar assets (gambar, file, dll)
+  assets:
+    - .env
+    #- assets/images/
+    #- assets/icons/
+    #- assets/json/
+
+  # Custom fonts (opsional)
+  # fonts:
+  #   - family: Poppins
+  #     fonts:
+  #       - asset: fonts/Poppins-Regular.ttf
+  #       - asset: fonts/Poppins-Medium.ttf
+  #         weight: 500
+  #       - asset: fonts/Poppins-Bold.ttf
+  #         weight: 700
