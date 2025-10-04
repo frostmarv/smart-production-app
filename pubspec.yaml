@@ -27,17 +27,35 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   # Aktifkan Material Design (termasuk ikon)
   uses-material-design: true
 
   # Daftar assets (gambar, file, dll)
-  # assets:
-    # - .env
-    #- assets/images/
-    #- assets/icons/
-    #- assets/json/
+  assets:
+    - assets/zinus_logo.jpeg
+    - assets/
+
+# Flutter Launcher Icons Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/zinus_logo.jpeg"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/zinus_logo.jpeg"
+    background_color: "#ffffff"
+    theme_color: "#3B82F6"
+  windows:
+    generate: true
+    image_path: "assets/zinus_logo.jpeg"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/zinus_logo.jpeg"
 
   # Custom fonts (opsional)
   # fonts:
