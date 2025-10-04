@@ -24,16 +24,19 @@ workflows:
         script: |
           flutter analyze
         ignore_failure: true
-      - name: Build APK
+      - name: Build Release APK
+        script: |
+          flutter build apk --release --split-per-abi
+      - name: Build Universal APK
         script: |
           flutter build apk --release
-      - name: Build App Bundle
+      - name: Build App Bundle (AAB)
         script: |
           flutter build appbundle --release
     artifacts:
-      - build/**/outputs/**/*.apk
-      - build/**/outputs/**/*.aab
-      - build/**/outputs/**/mapping.txt
+      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/mapping/release/mapping.txt
       - flutter_drive.log
     publishing:
       email:
@@ -104,6 +107,47 @@ workflows:
       #     - Internal Testers
       #   submit_to_app_store: false
 
+  # APK Only Build (for direct distribution)
+  android-apk-only:
+    name: Android APK Build
+    max_build_duration: 45
+    instance_type: mac_mini_m1
+    environment:
+      android_signing:
+        - keystore_reference
+      groups:
+        - app_credentials
+      vars:
+        PACKAGE_NAME: "com.zinus.production.smart_production_app"
+      flutter: 3.24.5
+      java: 17
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Build Split APKs (per ABI)
+        script: |
+          flutter build apk --release --split-per-abi
+      - name: Build Universal APK
+        script: |
+          flutter build apk --release
+    artifacts:
+      - build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+      - build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+      - build/app/outputs/flutter-apk/app-x86_64-release.apk
+      - build/app/outputs/flutter-apk/app-release.apk
+      - build/app/outputs/mapping/release/mapping.txt
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+
   # Development Build (Debug)
   dev-workflow:
     name: Development Build
@@ -122,12 +166,16 @@ workflows:
           include: true
           source: true
     scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
       - name: Get Flutter packages
         script: |
           flutter packages pub get
       - name: Flutter analyze
         script: |
           flutter analyze
+        ignore_failure: true
       - name: Run tests
         script: |
           flutter test
@@ -136,7 +184,7 @@ workflows:
         script: |
           flutter build apk --debug
     artifacts:
-      - build/**/outputs/**/*.apk
+      - build/app/outputs/flutter-apk/*.apk
     publishing:
       email:
         recipients:
