@@ -20,6 +20,9 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
+      - name: Generate app icons
+        script: |
+          flutter pub run flutter_launcher_icons
       - name: Flutter analyze
         script: |
           flutter analyze
@@ -130,6 +133,9 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
+      - name: Generate app icons
+        script: |
+          flutter pub run flutter_launcher_icons
       - name: Build Split APKs (per ABI)
         script: |
           flutter build apk --release --split-per-abi
@@ -180,6 +186,9 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
+      - name: Generate app icons
+        script: |
+          flutter pub run flutter_launcher_icons
       - name: Flutter analyze
         script: |
           flutter analyze
