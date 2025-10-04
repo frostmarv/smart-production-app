@@ -1,7 +1,7 @@
 
 // lib/screens/home_pages/home/home_page_content.dart
 import 'package:flutter/material.dart';
-import 'package:smart_production_app/screens/home_pages/workable/workable_page_content.dart'; // Impor halaman workable
+import 'package:zinus_production/screens/home_pages/workable/workable_page_content.dart'; // Impor halaman workable
 
 class HomePageContent extends StatelessWidget {
   const HomePageContent({super.key});

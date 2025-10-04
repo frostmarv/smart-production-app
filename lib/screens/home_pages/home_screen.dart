@@ -1,8 +1,8 @@
 
 // lib/screens/home_pages/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:smart_production_app/widgets/app_bar.dart';
-import 'package:smart_production_app/widgets/bottom_nav_bar.dart';
+import 'package:zinus_production/widgets/app_bar.dart';
+import 'package:zinus_production/widgets/bottom_nav_bar.dart';
 
 // Import semua halaman dari file terpisah
 import '../stock/stock_screen.dart';

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:smart_production_app/repositories/workable/workable_bonding_repository.dart';
+import 'package:zinus_production/repositories/workable/workable_bonding_repository.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -401,11 +401,11 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
 
           // Body: loading, error, empty, atau data
           if (snapshot.connectionState == ConnectionState.waiting)
-            ...List.generate(5, (index) => _buildSkeletonRow()),
+            ...List.generate(5, (index) => _buildSkeletonRow())
           else if (snapshot.hasError)
-            _buildMessageRow('Gagal memuat data. Silakan coba lagi.', isError: true),
+            ...[_buildMessageRow('Gagal memuat data. Silakan coba lagi.', isError: true)]
           else if (!snapshot.hasData || snapshot.data!.isEmpty)
-            _buildMessageRow('Tidak ada data tersedia.', isError: false),
+            ...[_buildMessageRow('Tidak ada data tersedia.', isError: false)]
           else
             ...snapshot.data!.map((item) => _buildTableRow(item, NumberFormat("#,##0", "en_US"))).toList(),
         ],

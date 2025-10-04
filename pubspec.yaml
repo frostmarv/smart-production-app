@@ -1,4 +1,4 @@
-name: smart_production_app
+name: zinus_production
 description: "Aplikasi produksi digital dengan fitur offline & integrasi JDE"
 
 # Jangan publish ke pub.dev (karena internal)

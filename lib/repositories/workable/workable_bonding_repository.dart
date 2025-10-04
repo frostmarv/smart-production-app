@@ -1,5 +1,5 @@
 // lib/repositories/workable_bonding_repository.dart
-import 'package:smart_production_app/services/http_client.dart';
+import 'package:zinus_production/services/http_client.dart';
 
 /// Repository untuk mengakses data Workable Bonding dari backend.
 /// Setara dengan `workable-bonding.js` di React.
