@@ -1,18 +1,26 @@
-
+// lib/screens/home_pages/workable/bonding/workable_bonding_detail.dart
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:smart_production_app/repositories/workable/workable_bonding_repository.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 
 class WorkableBondingDetailPage extends StatefulWidget {
-  WorkableBondingDetailPage({super.key});
+  const WorkableBondingDetailPage({super.key});
 
   @override
   State<WorkableBondingDetailPage> createState() => _WorkableBondingDetailPageState();
 }
 
-class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> with TickerProviderStateMixin {
+class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
+    with TickerProviderStateMixin {
   late Future<List<dynamic>> _workableBondingDetailFuture;
   late AnimationController _animationController;
+  final ScreenshotController _screenshotController = ScreenshotController();
 
   @override
   void initState() {
@@ -36,7 +44,70 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
     });
   }
 
- @override
+  Future<void> _captureAndShare() async {
+    try {
+      Uint8List? image = await _screenshotController.capture();
+      if (image == null) return;
+
+      final dir = await getApplicationDocumentsDirectory();
+      final tempFile = File('${dir.path}/temp_workable_detail.png');
+      await tempFile.writeAsBytes(image);
+
+      await Share.shareXFiles([
+        XFile.fromData(
+          image,
+          mimeType: 'image/png',
+          name: 'workable_detail_summary.png',
+        ),
+      ], text: 'Ini adalah detail produksi Workable Bonding');
+
+      await tempFile.delete();
+
+      _showMessage('Gambar telah dibagikan!');
+    } catch (e) {
+      _showMessage('Gagal membagikan gambar: $e');
+    }
+  }
+
+  Future<void> _downloadImage() async {
+    if (Platform.isAndroid) {
+      final status = await Permission.storage.request();
+      if (!status.isGranted) {
+        _showMessage('Izin penyimpanan dibutuhkan untuk menyimpan gambar.');
+        return;
+      }
+    }
+
+    try {
+      Uint8List? image = await _screenshotController.capture();
+      if (image == null) return;
+
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/workable_bonding_detail.png');
+      await file.writeAsBytes(image);
+
+      _showMessage('Gambar disimpan di:\n${file.path}');
+    } catch (e) {
+      _showMessage('Gagal menyimpan gambar: $e');
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 4),
+        backgroundColor: Colors.grey[800],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -65,6 +136,20 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
           ),
         ),
         actions: [
+          // Tombol Share
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: _captureAndShare,
+            tooltip: "Bagikan Gambar",
+            color: Colors.white,
+          ),
+          // Tombol Download
+          IconButton(
+            icon: const Icon(Icons.download_outlined),
+            onPressed: _downloadImage,
+            tooltip: "Download as Image",
+            color: Colors.white,
+          ),
           Container(
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
@@ -111,196 +196,6 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
           _buildTableContainer(snapshot),
         ],
       ),
-    );
-  }
-
-  Widget _buildTableContainer(AsyncSnapshot<List<dynamic>> snapshot) {
-    return FadeTransition(
-      opacity: _animationController,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF6366F1).withOpacity(0.08),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-              spreadRadius: -4,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFFF8FAFC),
-                        Colors.white,
-                      ],
-                    ),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: const Color(0xFFE2E8F0),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                          ),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.analytics_outlined,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        "Production Details",
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF1E293B),
-                              letterSpacing: -0.5,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                _buildTableContent(snapshot)
-              ],
-            )),
-      ),
-    );
-  }
-
-  Widget _buildTableContent(AsyncSnapshot<List<dynamic>> snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return _buildSkeletonLoader();
-    }
-    if (snapshot.hasError) {
-      return _buildErrorState();
-    }
-    if (snapshot.data!.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: _buildDataTable(snapshot.data!),
-    );
-  }
-
-  DataTable _buildDataTable(List<dynamic> items) {
-    final numberFormat = NumberFormat("#,##0", "en_US");
-    int rowIndex = 0;
-    return DataTable(
-      dataRowMaxHeight: 64,
-      columnSpacing: 32.0,
-      headingRowHeight: 56,
-      headingRowColor: MaterialStateProperty.all(
-        const Color(0xFFF8FAFC),
-      ),
-      headingTextStyle: const TextStyle(
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF475569),
-        fontSize: 13,
-        letterSpacing: 0.5,
-      ),
-      columns: const [
-        DataColumn(label: Text('CUSTOMER PO')),
-        DataColumn(label: Text('SKU')),
-        DataColumn(label: Text('QTY'), numeric: true),
-        DataColumn(label: Text('L1'), numeric: true),
-        DataColumn(label: Text('L2'), numeric: true),
-        DataColumn(label: Text('L3'), numeric: true),
-        DataColumn(label: Text('L4'), numeric: true),
-        DataColumn(label: Text('HOLE'), numeric: true),
-        DataColumn(label: Text('REMAIN'), numeric: true),
-        DataColumn(label: Text('STATUS')),
-      ],
-      rows: items.map((item) {
-        rowIndex++;
-        final isEven = rowIndex % 2 == 0;
-        return DataRow(
-          color: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
-            if (states.contains(MaterialState.hovered)) {
-              return const Color(0xFF6366F1).withOpacity(0.08);
-            }
-            return isEven ? const Color(0xFFF8FAFC) : Colors.white;
-          }),
-          cells: [
-            DataCell(Text(
-              item['customerPO'] ?? '',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1E293B),
-              ),
-            )),
-            DataCell(Text(
-              item['sku'] ?? '',
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF475569),
-              ),
-            )),
-            DataCell(Text(
-              numberFormat.format(item['quantityOrder'] ?? 0),
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1E293B),
-              ),
-            )),
-            DataCell(Text(
-              item['Layer 1']?.toString() ?? '0',
-              style: const TextStyle(color: Color(0xFF64748B)),
-            )),
-            DataCell(Text(
-              item['Layer 2']?.toString() ?? '0',
-              style: const TextStyle(color: Color(0xFF64748B)),
-            )),
-            DataCell(Text(
-              item['Layer 3']?.toString() ?? '0',
-              style: const TextStyle(color: Color(0xFF64748B)),
-            )),
-            DataCell(Text(
-              item['Layer 4']?.toString() ?? '0',
-              style: const TextStyle(color: Color(0xFF64748B)),
-            )),
-            DataCell(Text(
-              item['Hole']?.toString() ?? '0',
-              style: const TextStyle(color: Color(0xFF64748B)),
-            )),
-            DataCell(Text(
-              numberFormat.format(item['remain'] ?? 0),
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0F172A),
-              ),
-            )),
-            DataCell(_buildStatusChip(item['status'] ?? 'Unknown')),
-          ],
-        );
-      }).toList(),
     );
   }
 
@@ -393,40 +288,263 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
     );
   }
 
-  Widget _buildStatusChip(String status) {
-    Color chipColor;
-    Color textColor;
-    switch (status.toLowerCase()) {
-      case 'not started':
-        chipColor = const Color(0xFFFEF9C3);
-        textColor = const Color(0xFF854D0E);
-        break;
-      case 'running':
-      case 'in progress':
-        chipColor = const Color(0xFFDBEAFE);
-        textColor = const Color(0xFF1E40AF);
-        break;
-      case 'completed':
-        chipColor = const Color(0xFFDCFCE7);
-        textColor = const Color(0xFF166534);
-        break;
-      default:
-        chipColor = const Color(0xFFE2E8F0);
-        textColor = const Color(0xFF334155);
-        break;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: chipColor,
-        borderRadius: BorderRadius.circular(20),
+  Widget _buildTableContainer(AsyncSnapshot<List<dynamic>> snapshot) {
+    return FadeTransition(
+      opacity: _animationController,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6366F1).withOpacity(0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFF8FAFC),
+                      Colors.white,
+                    ],
+                  ),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.analytics_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "Production Details",
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1E293B),
+                            letterSpacing: -0.5,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Screenshot(
+                controller: _screenshotController,
+                child: _buildTableContent(snapshot),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _buildTableContent(AsyncSnapshot<List<dynamic>> snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return _buildSkeletonLoader();
+    }
+    if (snapshot.hasError) {
+      return _buildErrorState();
+    }
+    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    final items = snapshot.data!;
+    final numberFormat = NumberFormat("#,##0", "en_US");
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // Header
+          _buildTableHeader(),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+          // Rows
+          ...items.map((item) => _buildTableRow(item, numberFormat)).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableHeader() {
+    return Row(
+      children: [
+        Expanded(flex: 2, child: _headerCell('CUSTOMER PO')),
+        Expanded(flex: 2, child: _headerCell('SKU')),
+        Expanded(flex: 1, child: _headerCell('QTY', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('L1', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('L2', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('L3', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('L4', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('HOLE', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('REMAIN', textAlign: TextAlign.end)),
+        Expanded(flex: 2, child: _headerCell('STATUS')),
+      ],
+    );
+  }
+
+  Widget _headerCell(String text, {TextAlign textAlign = TextAlign.start}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
       child: Text(
-        status,
-        style: TextStyle(
-          color: textColor,
+        text,
+        style: const TextStyle(
           fontWeight: FontWeight.w600,
+          color: Color(0xFF475569),
           fontSize: 12,
+        ),
+        textAlign: textAlign,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _buildTableRow(dynamic item, NumberFormat numberFormat) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(flex: 2, child: _dataCell(item['customerPO'] ?? '-')),
+            Expanded(flex: 2, child: _dataCell(item['sku'] ?? '-')),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                numberFormat.format(item['quantityOrder'] ?? 0),
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                item['Layer 1']?.toString() ?? '0',
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                item['Layer 2']?.toString() ?? '0',
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                item['Layer 3']?.toString() ?? '0',
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                item['Layer 4']?.toString() ?? '0',
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                item['Hole']?.toString() ?? '0',
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                numberFormat.format(item['remain'] ?? 0),
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(flex: 2, child: _buildStatusChip(item['status'] ?? 'Unknown')),
+          ],
+        ),
+        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+      ],
+    );
+  }
+
+  Widget _dataCell(String text, {TextAlign textAlign = TextAlign.start}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF1E293B),
+          height: 1.3,
+        ),
+        textAlign: textAlign,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    Color bgColor, textColor;
+    final lower = status.toLowerCase();
+    if (lower == 'not started') {
+      bgColor = const Color(0xFFFFF9DB);
+      textColor = const Color(0xFF854D0E);
+    } else if (lower == 'running' || lower == 'in progress') {
+      bgColor = const Color(0xFFDBEAFE);
+      textColor = const Color(0xFF1E40AF);
+    } else if (lower == 'completed') {
+      bgColor = const Color(0xFFDCFCE7);
+      textColor = const Color(0xFF166534);
+    } else {
+      bgColor = const Color(0xFFE2E8F0);
+      textColor = const Color(0xFF334155);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          status,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -496,13 +614,25 @@ class _SkeletonRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
         children: [
-          _buildSkeletonElement(width: 80),
-          const SizedBox(width: 20),
-          _buildSkeletonElement(width: 100),
-          const SizedBox(width: 20),
-          _buildSkeletonElement(width: 50),
-          const SizedBox(width: 20),
-          Expanded(child: _buildSkeletonElement()),
+          Expanded(flex: 2, child: _buildSkeletonElement(width: 100)),
+          const SizedBox(width: 12),
+          Expanded(flex: 2, child: _buildSkeletonElement(width: 100)),
+          const SizedBox(width: 12),
+          Expanded(flex: 1, child: _buildSkeletonElement(width: 50)),
+          const SizedBox(width: 12),
+          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
+          const SizedBox(width: 12),
+          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
+          const SizedBox(width: 12),
+          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
+          const SizedBox(width: 12),
+          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
+          const SizedBox(width: 12),
+          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
+          const SizedBox(width: 12),
+          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
+          const SizedBox(width: 12),
+          Expanded(flex: 2, child: _buildSkeletonElement(width: 80)),
         ],
       ),
     );

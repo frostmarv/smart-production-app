@@ -1,8 +1,14 @@
 // lib/screens/home_pages/workable/bonding/workable_bonding_page.dart
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:smart_production_app/repositories/workable/workable_bonding_repository.dart';
-import 'workable_bonding_detail.dart'; // path sudah benar
+import 'package:screenshot/screenshot.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
+import 'workable_bonding_detail.dart';
 
 class WorkableBondingPage extends StatefulWidget {
   const WorkableBondingPage({super.key});
@@ -15,6 +21,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
     with TickerProviderStateMixin {
   late Future<List<dynamic>> _workableBondingFuture;
   late AnimationController _animationController;
+  final ScreenshotController _screenshotController = ScreenshotController();
 
   @override
   void initState() {
@@ -36,6 +43,72 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
     setState(() {
       _workableBondingFuture = WorkableBondingRepository.getWorkableBonding();
     });
+  }
+
+  Future<void> _captureAndShare() async {
+    try {
+      Uint8List? image = await _screenshotController.capture();
+      if (image == null) return;
+
+      // Simpan sementara ke file
+      final dir = await getApplicationDocumentsDirectory();
+      final tempFile = File('${dir.path}/temp_workable_summary.png');
+      await tempFile.writeAsBytes(image);
+
+      // Share file
+      await Share.shareXFiles([
+        XFile.fromData(
+          image,
+          mimeType: 'image/png',
+          name: 'workable_summary.png',
+        ),
+      ], text: 'Ini adalah ringkasan Workable Bonding');
+
+      // Hapus file sementara (opsional)
+      await tempFile.delete();
+
+      _showMessage('Gambar telah dibagikan!');
+    } catch (e) {
+      _showMessage('Gagal membagikan gambar: $e');
+    }
+  }
+
+  Future<void> _downloadImage() async {
+    if (Platform.isAndroid) {
+      final status = await Permission.storage.request();
+      if (!status.isGranted) {
+        _showMessage('Izin penyimpanan dibutuhkan untuk menyimpan gambar.');
+        return;
+      }
+    }
+
+    try {
+      Uint8List? image = await _screenshotController.capture();
+      if (image == null) return;
+
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/workable_bonding_summary.png');
+      await file.writeAsBytes(image);
+
+      _showMessage('Gambar disimpan di:\n${file.path}');
+    } catch (e) {
+      _showMessage('Gagal menyimpan gambar: $e');
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 4),
+        backgroundColor: Colors.grey[800],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
   }
 
   @override
@@ -67,6 +140,20 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
           ),
         ),
         actions: [
+          // Tombol Share
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: _captureAndShare,
+            tooltip: "Bagikan Gambar",
+            color: Colors.white,
+          ),
+          // Tombol Download
+          IconButton(
+            icon: const Icon(Icons.download_outlined),
+            onPressed: _downloadImage,
+            tooltip: "Download as Image",
+            color: Colors.white,
+          ),
           Container(
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
@@ -115,107 +202,111 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
         children: [
           _buildSummarySection(total, running, notStarted, completed),
           const SizedBox(height: 28),
+          _buildDetailedViewCard(),
+          const SizedBox(height: 24),
+          _buildTableContainer(snapshot),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailedViewCard() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            const Color(0xFF3B82F6).withOpacity(0.1),
+            const Color(0xFF2563EB).withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF3B82F6).withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
           Container(
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  const Color(0xFF3B82F6).withOpacity(0.1),
-                  const Color(0xFF2563EB).withOpacity(0.05),
-                ],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
               ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFF3B82F6).withOpacity(0.2),
-                width: 1,
-              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF3B82F6).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            padding: const EdgeInsets.all(20),
-            child: Row(
+            child: const Icon(
+              Icons.table_chart_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF3B82F6).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.table_chart_outlined,
-                    color: Colors.white,
-                    size: 24,
+                Text(
+                  "Detailed View",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
                   ),
                 ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Detailed View",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1E293B),
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        "View complete workable details",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => WorkableBondingDetailPage()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E293B),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    elevation: 4,
-                    shadowColor: Colors.black.withOpacity(0.2),
-                  ),
-                  child: const Row(
-                    children: [
-                      Text(
-                        "View",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward_rounded, size: 18),
-                    ],
+                SizedBox(height: 4),
+                Text(
+                  "View complete workable details",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          _buildTableContainer(snapshot),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => WorkableBondingDetailPage()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E293B),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              elevation: 4,
+              shadowColor: Colors.black.withOpacity(0.2),
+            ),
+            child: const Row(
+              children: [
+                Text(
+                  "View",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Icon(Icons.arrow_forward_rounded, size: 18),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -295,7 +386,10 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
                   ],
                 ),
               ),
-              _buildTableContent(snapshot)
+              Screenshot(
+                controller: _screenshotController,
+                child: _buildTableContent(snapshot),
+              ),
             ],
           ),
         ),
@@ -314,99 +408,153 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       return _buildEmptyState();
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: _buildDataTable(snapshot.data!),
-    );
-  }
-
-  DataTable _buildDataTable(List<dynamic> items) {
+    final items = snapshot.data!;
     final numberFormat = NumberFormat("#,##0", "en_US");
-    return DataTable(
-      dataRowMaxHeight: 64,
-      columnSpacing: 24,
-      headingRowHeight: 50,
-      headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
-      headingTextStyle: const TextStyle(
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF64748B),
-        fontSize: 13,
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // Header
+          _buildTableHeader(),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+          // Rows
+          ...items.map((item) => _buildTableRow(item, numberFormat)).toList(),
+        ],
       ),
-      columns: const [
-        DataColumn(label: Text('WEEK')),
-        DataColumn(label: Text('SHIP TO NAME')),
-        DataColumn(label: Text('SKU')),
-        DataColumn(label: Text('QTY ORDER'), numeric: true),
-        DataColumn(label: Text('REMAIN'), numeric: true),
-        DataColumn(label: Text('STATUS')),
-      ],
-      rows: items.asMap().entries.map((entry) {
-        final item = entry.value;
-        final isEven = entry.key % 2 == 0;
-        return DataRow(
-          color: MaterialStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(MaterialState.hovered)) {
-              return Theme.of(context).colorScheme.primary.withOpacity(0.08);
-            }
-            return isEven ? Colors.grey.withOpacity(0.05) : null;
-          }),
-          cells: [
-            DataCell(Text(item['week'].toString())),
-            DataCell(Text(item['shipToName'] ?? '-')),
-            DataCell(Text(item['sku'] ?? '-')),
-            DataCell(Text(numberFormat.format(item['quantityOrder'] ?? 0))),
-            DataCell(Text(numberFormat.format(item['remain'] ?? 0))),
-            DataCell(_buildStatusChip(item['status'] ?? 'Unknown')),
-          ],
-        );
-      }).toList(),
     );
   }
 
+  Widget _buildTableHeader() {
+    return Row(
+      children: [
+        Expanded(flex: 1, child: _headerCell('WEEK')),
+        Expanded(flex: 3, child: _headerCell('SHIP TO NAME')),
+        Expanded(flex: 2, child: _headerCell('SKU')),
+        Expanded(flex: 1, child: _headerCell('QTY', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('REMAIN', textAlign: TextAlign.end)),
+        Expanded(flex: 2, child: _headerCell('STATUS')),
+      ],
+    );
+  }
+
+  Widget _headerCell(String text, {TextAlign textAlign = TextAlign.start}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF64748B),
+          fontSize: 12,
+        ),
+        textAlign: textAlign,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _buildTableRow(dynamic item, NumberFormat numberFormat) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(flex: 1, child: _dataCell(item['week'].toString())),
+            Expanded(flex: 3, child: _dataCell(item['shipToName'] ?? '-')),
+            Expanded(flex: 2, child: _dataCell(item['sku'] ?? '-')),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                numberFormat.format(item['quantityOrder'] ?? 0),
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                numberFormat.format(item['remain'] ?? 0),
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(flex: 2, child: _buildStatusChip(item['status'] ?? 'Unknown')),
+          ],
+        ),
+        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+      ],
+    );
+  }
+
+  Widget _dataCell(String text, {TextAlign textAlign = TextAlign.start}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF1E293B),
+          height: 1.3,
+        ),
+        textAlign: textAlign,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    Color bgColor, textColor;
+    final lower = status.toLowerCase();
+    if (lower == 'not started') {
+      bgColor = const Color(0xFFFFF9DB);
+      textColor = const Color(0xFF854D0E);
+    } else if (lower == 'running' || lower == 'in progress') {
+      bgColor = const Color(0xFFDBEAFE);
+      textColor = const Color(0xFF1E40AF);
+    } else if (lower == 'completed') {
+      bgColor = const Color(0xFFDCFCE7);
+      textColor = const Color(0xFF166534);
+    } else {
+      bgColor = const Color(0xFFE2E8F0);
+      textColor = const Color(0xFF334155);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          status,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  // --- Reused UI Helpers ---
   Widget _buildSummarySection(int total, int running, int notStarted, int completed) {
     return Column(
       children: [
         Row(
           children: [
-            Expanded(
-              child: _buildSummaryCard(
-                "Total Items",
-                total,
-                Icons.view_list_rounded,
-                const Color(0xFF475569),
-              ),
-            ),
+            Expanded(child: _buildSummaryCard("Total Items", total, Icons.view_list_rounded, const Color(0xFF475569))),
             const SizedBox(width: 14),
-            Expanded(
-              child: _buildSummaryCard(
-                "Running",
-                running,
-                Icons.play_circle_outline_rounded,
-                const Color(0xFF2563EB),
-              ),
-            ),
+            Expanded(child: _buildSummaryCard("Running", running, Icons.play_circle_outline_rounded, const Color(0xFF2563EB))),
           ],
         ),
         const SizedBox(height: 14),
         Row(
           children: [
-            Expanded(
-              child: _buildSummaryCard(
-                "Not Started",
-                notStarted,
-                Icons.hourglass_empty_rounded,
-                const Color(0xFFD97706),
-              ),
-            ),
+            Expanded(child: _buildSummaryCard("Not Started", notStarted, Icons.hourglass_empty_rounded, const Color(0xFFD97706))),
             const SizedBox(width: 14),
-            Expanded(
-              child: _buildSummaryCard(
-                "Completed",
-                completed,
-                Icons.check_circle_outline_rounded,
-                const Color(0xFF16A34A),
-              ),
-            ),
+            Expanded(child: _buildSummaryCard("Completed", completed, Icons.check_circle_outline_rounded, const Color(0xFF16A34A))),
           ],
         ),
       ],
@@ -419,10 +567,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color.withOpacity(0.1),
-          width: 2,
-        ),
+        border: Border.all(color: color.withOpacity(0.1), width: 2),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.08),
@@ -441,10 +586,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  color,
-                  color.withOpacity(0.7),
-                ],
+                colors: [color, color.withOpacity(0.7)],
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
@@ -465,82 +607,20 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
               fontWeight: FontWeight.w800,
               color: const Color(0xFF1E293B),
               letterSpacing: -1,
-              shadows: [
-                Shadow(
-                  color: color.withOpacity(0.1),
-                  offset: const Offset(0, 2),
-                  blurRadius: 4,
-                ),
-              ],
+              shadows: [Shadow(color: color.withOpacity(0.1), offset: const Offset(0, 2), blurRadius: 4)],
             ),
           ),
           const SizedBox(height: 6),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF64748B),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
-            ),
+            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600, letterSpacing: 0.3),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusChip(String status) {
-    Color bgColor, textColor;
-    final lower = status.toLowerCase();
-    if (lower == 'not started') {
-      bgColor = const Color(0xFFFEF9C3);
-      textColor = const Color(0xFF854D0E);
-    } else if (lower == 'running' || lower == 'in progress') {
-      bgColor = const Color(0xFFDBEAFE);
-      textColor = const Color(0xFF1E40AF);
-    } else if (lower == 'completed') {
-      bgColor = const Color(0xFFDCFCE7);
-      textColor = const Color(0xFF166534);
-    } else {
-      bgColor = const Color(0xFFE2E8F0);
-      textColor = const Color(0xFF334155);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-
-  // ---- Functions added to fix compile errors ----
-
-  Widget _buildSkeletonLoader() {
-    return const Center(child: CircularProgressIndicator());
-  }
-
-  Widget _buildErrorState() {
-    return const Center(
-      child: Text(
-        'Failed to load data. Please try again.',
-        style: TextStyle(color: Colors.red),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return const Center(
-      child: Text('No workable data available.'),
-    );
-  }
+  Widget _buildSkeletonLoader() => const Center(child: CircularProgressIndicator());
+  Widget _buildErrorState() => const Center(child: Text('Gagal memuat data.', style: TextStyle(color: Colors.red)));
+  Widget _buildEmptyState() => const Center(child: Text('Tidak ada data tersedia.'));
 }

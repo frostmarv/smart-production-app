@@ -3,7 +3,7 @@
     "short_name": "Zinus",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#3B82F6",
+    "background_color": "#ffffff",
     "theme_color": "#3B82F6",
     "description": "Aplikasi produksi digital dengan fitur offline & integrasi JDE",
     "orientation": "portrait-primary",
