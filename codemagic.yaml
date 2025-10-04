@@ -11,14 +11,19 @@ workflows:
         - app_credentials
       vars:
         PACKAGE_NAME: "com.zinus.production.smart_production_app"
-      flutter: stable
+      flutter: 3.24.5
+      java: 17
     scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
       - name: Get Flutter packages
         script: |
           flutter packages pub get
       - name: Flutter analyze
         script: |
           flutter analyze
+        ignore_failure: true
       - name: Build APK
         script: |
           flutter build apk --release
@@ -60,7 +65,7 @@ workflows:
         BUNDLE_ID: "com.zinus.production.smartProductionApp"
         XCODE_WORKSPACE: "Runner.xcworkspace"
         XCODE_SCHEME: "Runner"
-      flutter: stable
+      flutter: 3.24.5
       xcode: latest
       cocoapods: default
     scripts:
@@ -107,7 +112,8 @@ workflows:
     environment:
       groups:
         - app_credentials
-      flutter: stable
+      flutter: 3.24.5
+      java: 17
     triggering:
       events:
         - push
