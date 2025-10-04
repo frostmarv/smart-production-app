@@ -33,12 +33,27 @@ workflows:
       - name: Build Universal APK
         script: |
           flutter build apk --release
+      - name: Rename APK files
+        script: |
+          cd build/app/outputs/flutter-apk
+          VERSION=$(grep 'version:' ../../../../pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          BUILD=$(grep 'version:' ../../../../pubspec.yaml | awk '{print $2}' | cut -d'+' -f2)
+          
+          # Rename split APKs
+          [ -f app-armeabi-v7a-release.apk ] && mv app-armeabi-v7a-release.apk "zinus-production-v${VERSION}-armeabi-v7a.apk"
+          [ -f app-arm64-v8a-release.apk ] && mv app-arm64-v8a-release.apk "zinus-production-v${VERSION}-arm64-v8a.apk"
+          [ -f app-x86_64-release.apk ] && mv app-x86_64-release.apk "zinus-production-v${VERSION}-x86_64.apk"
+          
+          # Rename universal APK
+          [ -f app-release.apk ] && mv app-release.apk "zinus-production-v${VERSION}-universal.apk"
+          
+          ls -lh
       # Uncomment below to build AAB for Play Store
       # - name: Build App Bundle (AAB)
       #   script: |
       #     flutter build appbundle --release
     artifacts:
-      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/flutter-apk/zinus-production-*.apk
       # Uncomment below to include AAB in artifacts
       # - build/app/outputs/bundle/release/*.aab
       - build/app/outputs/mapping/release/mapping.txt
@@ -142,15 +157,27 @@ workflows:
       - name: Build Universal APK
         script: |
           flutter build apk --release
+      - name: Rename APK files
+        script: |
+          cd build/app/outputs/flutter-apk
+          VERSION=$(grep 'version:' ../../../../pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          BUILD=$(grep 'version:' ../../../../pubspec.yaml | awk '{print $2}' | cut -d'+' -f2)
+          
+          # Rename split APKs
+          [ -f app-armeabi-v7a-release.apk ] && mv app-armeabi-v7a-release.apk "zinus-production-v${VERSION}-armeabi-v7a.apk"
+          [ -f app-arm64-v8a-release.apk ] && mv app-arm64-v8a-release.apk "zinus-production-v${VERSION}-arm64-v8a.apk"
+          [ -f app-x86_64-release.apk ] && mv app-x86_64-release.apk "zinus-production-v${VERSION}-x86_64.apk"
+          
+          # Rename universal APK
+          [ -f app-release.apk ] && mv app-release.apk "zinus-production-v${VERSION}-universal.apk"
+          
+          ls -lh
       # Uncomment below to build AAB for Play Store
       # - name: Build App Bundle (AAB)
       #   script: |
       #     flutter build appbundle --release
     artifacts:
-      - build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-      - build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-      - build/app/outputs/flutter-apk/app-x86_64-release.apk
-      - build/app/outputs/flutter-apk/app-release.apk
+      - build/app/outputs/flutter-apk/zinus-production-*.apk
       # Uncomment below to include AAB in artifacts
       # - build/app/outputs/bundle/release/*.aab
       - build/app/outputs/mapping/release/mapping.txt
