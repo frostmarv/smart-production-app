@@ -50,12 +50,10 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       Uint8List? image = await _screenshotController.capture();
       if (image == null) return;
 
-      // Simpan sementara ke file
       final dir = await getApplicationDocumentsDirectory();
       final tempFile = File('${dir.path}/temp_workable_summary.png');
       await tempFile.writeAsBytes(image);
 
-      // Share file
       await Share.shareXFiles([
         XFile.fromData(
           image,
@@ -64,9 +62,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
         ),
       ], text: 'Ini adalah ringkasan Workable Bonding');
 
-      // Hapus file sementara (opsional)
       await tempFile.delete();
-
       _showMessage('Gambar telah dibagikan!');
     } catch (e) {
       _showMessage('Gagal membagikan gambar: $e');
@@ -89,7 +85,6 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/workable_bonding_summary.png');
       await file.writeAsBytes(image);
-
       _showMessage('Gambar disimpan di:\n${file.path}');
     } catch (e) {
       _showMessage('Gagal menyimpan gambar: $e');
@@ -140,14 +135,12 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
           ),
         ),
         actions: [
-          // Tombol Share
           IconButton(
             icon: const Icon(Icons.share_outlined),
             onPressed: _captureAndShare,
             tooltip: "Bagikan Gambar",
             color: Colors.white,
           ),
-          // Tombol Download
           IconButton(
             icon: const Icon(Icons.download_outlined),
             onPressed: _downloadImage,
@@ -398,28 +391,23 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   }
 
   Widget _buildTableContent(AsyncSnapshot<List<dynamic>> snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return _buildSkeletonLoader();
-    }
-    if (snapshot.hasError) {
-      return _buildErrorState();
-    }
-    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    final items = snapshot.data!;
-    final numberFormat = NumberFormat("#,##0", "en_US");
-
+    // Header selalu ditampilkan
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          // Header
           _buildTableHeader(),
           const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
-          // Rows
-          ...items.map((item) => _buildTableRow(item, numberFormat)).toList(),
+
+          // Body: loading, error, empty, atau data
+          if (snapshot.connectionState == ConnectionState.waiting)
+            ...List.generate(5, (index) => _buildSkeletonRow()),
+          else if (snapshot.hasError)
+            _buildMessageRow('Gagal memuat data. Silakan coba lagi.', isError: true),
+          else if (!snapshot.hasData || snapshot.data!.isEmpty)
+            _buildMessageRow('Tidak ada data tersedia.', isError: false),
+          else
+            ...snapshot.data!.map((item) => _buildTableRow(item, NumberFormat("#,##0", "en_US"))).toList(),
         ],
       ),
     );
@@ -538,6 +526,64 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
     );
   }
 
+  Widget _buildSkeletonRow() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(flex: 1, child: _skeletonCell(width: 40)),
+            Expanded(flex: 3, child: _skeletonCell(width: 120)),
+            Expanded(flex: 2, child: _skeletonCell(width: 80)),
+            Expanded(flex: 1, child: _skeletonCell(width: 50)),
+            Expanded(flex: 1, child: _skeletonCell(width: 50)),
+            Expanded(flex: 2, child: _skeletonCell(width: 90)),
+          ],
+        ),
+        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+      ],
+    );
+  }
+
+  Widget _skeletonCell({double? width}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Container(
+        height: 16,
+        width: width,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageRow(String message, {required bool isError}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 28),
+      child: Center(
+        child: Column(
+          children: [
+            if (isError)
+              Icon(Icons.error_outline, color: Colors.red, size: 24)
+            else
+              Icon(Icons.info_outline, color: const Color(0xFF64748B), size: 24),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: TextStyle(
+                color: isError ? Colors.red : const Color(0xFF64748B),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // --- Reused UI Helpers ---
   Widget _buildSummarySection(int total, int running, int notStarted, int completed) {
     return Column(
@@ -619,8 +665,4 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       ),
     );
   }
-
-  Widget _buildSkeletonLoader() => const Center(child: CircularProgressIndicator());
-  Widget _buildErrorState() => const Center(child: Text('Gagal memuat data.', style: TextStyle(color: Colors.red)));
-  Widget _buildEmptyState() => const Center(child: Text('Tidak ada data tersedia.'));
 }
