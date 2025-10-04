@@ -24,18 +24,20 @@ workflows:
         script: |
           flutter analyze
         ignore_failure: true
-      - name: Build Release APK
+      - name: Build Release APK (Split per ABI)
         script: |
           flutter build apk --release --split-per-abi
       - name: Build Universal APK
         script: |
           flutter build apk --release
-      - name: Build App Bundle (AAB)
-        script: |
-          flutter build appbundle --release
+      # Uncomment below to build AAB for Play Store
+      # - name: Build App Bundle (AAB)
+      #   script: |
+      #     flutter build appbundle --release
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
-      - build/app/outputs/bundle/release/*.aab
+      # Uncomment below to include AAB in artifacts
+      # - build/app/outputs/bundle/release/*.aab
       - build/app/outputs/mapping/release/mapping.txt
       - flutter_drive.log
     publishing:
@@ -134,11 +136,17 @@ workflows:
       - name: Build Universal APK
         script: |
           flutter build apk --release
+      # Uncomment below to build AAB for Play Store
+      # - name: Build App Bundle (AAB)
+      #   script: |
+      #     flutter build appbundle --release
     artifacts:
       - build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
       - build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
       - build/app/outputs/flutter-apk/app-x86_64-release.apk
       - build/app/outputs/flutter-apk/app-release.apk
+      # Uncomment below to include AAB in artifacts
+      # - build/app/outputs/bundle/release/*.aab
       - build/app/outputs/mapping/release/mapping.txt
     publishing:
       email:
