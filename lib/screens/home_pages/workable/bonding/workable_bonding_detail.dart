@@ -39,26 +39,48 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text(
           "Workable Bonding Detail",
           style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            fontSize: 22,
+            letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E293B),
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF6366F1),
+                Color(0xFF8B5CF6),
+              ],
+            ),
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _fetchData,
-            tooltip: "Refresh Data",
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _fetchData,
+              tooltip: "Refresh Data",
+              color: Colors.white,
+            ),
           ),
         ],
       ),
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: FutureBuilder<List<dynamic>>(
         future: _workableBondingDetailFuture,
         builder: (context, snapshot) {
@@ -80,7 +102,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
     final runningItems = items.where((item) => (item['status'] ?? '').toLowerCase() == 'running' || (item['status'] ?? '').toLowerCase() == 'in progress').length;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+      padding: const EdgeInsets.only(top: 100, left: 20, right: 20, bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -99,28 +121,69 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
         width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: const Color(0xFF6366F1).withOpacity(0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
             ),
           ],
         ),
         child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text(
-                    "Production Details",
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1E293B),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFFF8FAFC),
+                        Colors.white,
+                      ],
+                    ),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: const Color(0xFFE2E8F0),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        child: const Icon(
+                          Icons.analytics_outlined,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "Production Details",
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF1E293B),
+                              letterSpacing: -0.5,
+                            ),
+                      ),
+                    ],
                   ),
                 ),
                 _buildTableContent(snapshot)
@@ -151,10 +214,18 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
     final numberFormat = NumberFormat("#,##0", "en_US");
     int rowIndex = 0;
     return DataTable(
-      dataRowMaxHeight: 60,
-      columnSpacing: 28.0,
-      headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
-      headingTextStyle: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B), fontSize: 13),
+      dataRowMaxHeight: 64,
+      columnSpacing: 32.0,
+      headingRowHeight: 56,
+      headingRowColor: MaterialStateProperty.all(
+        const Color(0xFFF8FAFC),
+      ),
+      headingTextStyle: const TextStyle(
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF475569),
+        fontSize: 13,
+        letterSpacing: 0.5,
+      ),
       columns: const [
         DataColumn(label: Text('CUSTOMER PO')),
         DataColumn(label: Text('SKU')),
@@ -173,20 +244,59 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
         return DataRow(
           color: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
             if (states.contains(MaterialState.hovered)) {
-              return Theme.of(context).colorScheme.primary.withOpacity(0.08);
+              return const Color(0xFF6366F1).withOpacity(0.08);
             }
-            return isEven ? Colors.grey.withOpacity(0.05) : null;
+            return isEven ? const Color(0xFFF8FAFC) : Colors.white;
           }),
           cells: [
-            DataCell(Text(item['customerPO'] ?? '')),
-            DataCell(Text(item['sku'] ?? '')),
-            DataCell(Text(numberFormat.format(item['quantityOrder'] ?? 0))),
-            DataCell(Text(item['Layer 1']?.toString() ?? '0')),
-            DataCell(Text(item['Layer 2']?.toString() ?? '0')),
-            DataCell(Text(item['Layer 3']?.toString() ?? '0')),
-            DataCell(Text(item['Layer 4']?.toString() ?? '0')),
-            DataCell(Text(item['Hole']?.toString() ?? '0')),
-            DataCell(Text(numberFormat.format(item['remain'] ?? 0))),
+            DataCell(Text(
+              item['customerPO'] ?? '',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+              ),
+            )),
+            DataCell(Text(
+              item['sku'] ?? '',
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF475569),
+              ),
+            )),
+            DataCell(Text(
+              numberFormat.format(item['quantityOrder'] ?? 0),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+              ),
+            )),
+            DataCell(Text(
+              item['Layer 1']?.toString() ?? '0',
+              style: const TextStyle(color: Color(0xFF64748B)),
+            )),
+            DataCell(Text(
+              item['Layer 2']?.toString() ?? '0',
+              style: const TextStyle(color: Color(0xFF64748B)),
+            )),
+            DataCell(Text(
+              item['Layer 3']?.toString() ?? '0',
+              style: const TextStyle(color: Color(0xFF64748B)),
+            )),
+            DataCell(Text(
+              item['Layer 4']?.toString() ?? '0',
+              style: const TextStyle(color: Color(0xFF64748B)),
+            )),
+            DataCell(Text(
+              item['Hole']?.toString() ?? '0',
+              style: const TextStyle(color: Color(0xFF64748B)),
+            )),
+            DataCell(Text(
+              numberFormat.format(item['remain'] ?? 0),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0F172A),
+              ),
+            )),
             DataCell(_buildStatusChip(item['status'] ?? 'Unknown')),
           ],
         );
@@ -212,12 +322,17 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withOpacity(0.15),
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: color.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: -4,
           ),
         ],
       ),
@@ -225,29 +340,52 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage> w
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  color,
+                  color.withOpacity(0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1E293B),
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1E293B),
+              letterSpacing: -0.8,
+              shadows: [
+                Shadow(
+                  color: color.withOpacity(0.1),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 12,
               color: Color(0xFF64748B),
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
             ),
           ),
         ],

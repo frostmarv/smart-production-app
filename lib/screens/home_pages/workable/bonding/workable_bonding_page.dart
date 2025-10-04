@@ -41,26 +41,48 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text(
           "Workable Bonding",
           style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            fontSize: 22,
+            letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E293B),
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF3B82F6),
+                Color(0xFF2563EB),
+              ],
+            ),
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _fetchData,
-            tooltip: "Refresh Data",
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _fetchData,
+              tooltip: "Refresh Data",
+              color: Colors.white,
+            ),
           ),
         ],
       ),
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: FutureBuilder<List<dynamic>>(
         future: _workableBondingFuture,
         builder: (context, snapshot) {
@@ -87,37 +109,112 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
         (item['status'] ?? '').toLowerCase() == 'completed').length;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      padding: const EdgeInsets.only(top: 100, left: 20, right: 20, bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSummarySection(total, running, notStarted, completed),
-          const SizedBox(height: 24),
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.table_chart_outlined, size: 18),
-              label: const Text("Lihat Detail Workable"),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => WorkableBondingDetailPage()), // const dihapus
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E293B),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                elevation: 2,
-                shadowColor: Colors.black.withOpacity(0.1),
+          const SizedBox(height: 28),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  const Color(0xFF3B82F6).withOpacity(0.1),
+                  const Color(0xFF2563EB).withOpacity(0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFF3B82F6).withOpacity(0.2),
+                width: 1,
               ),
             ),
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF3B82F6).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.table_chart_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Detailed View",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "View complete workable details",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => WorkableBondingDetailPage()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E293B),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    elevation: 4,
+                    shadowColor: Colors.black.withOpacity(0.2),
+                  ),
+                  child: const Row(
+                    children: [
+                      Text(
+                        "View",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward_rounded, size: 18),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           _buildTableContainer(snapshot),
         ],
       ),
@@ -133,28 +230,69 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: const Color(0xFF3B82F6).withOpacity(0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                child: Text(
-                  "Workable Summary",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1E293B),
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFF8FAFC),
+                      Colors.white,
+                    ],
+                  ),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                      child: const Icon(
+                        Icons.summarize_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "Workable Summary",
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1E293B),
+                            letterSpacing: -0.5,
+                          ),
+                    ),
+                  ],
                 ),
               ),
               _buildTableContent(snapshot)
@@ -280,12 +418,17 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withOpacity(0.1),
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: color.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: -4,
           ),
         ],
       ),
@@ -293,29 +436,52 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  color,
+                  color.withOpacity(0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             count.toString(),
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1E293B),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1E293B),
+              letterSpacing: -1,
+              shadows: [
+                Shadow(
+                  color: color.withOpacity(0.1),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               color: Color(0xFF64748B),
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
             ),
           ),
         ],
