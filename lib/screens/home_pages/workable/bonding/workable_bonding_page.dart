@@ -302,7 +302,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => WorkableBondingDetailPage()),
+                    builder: (context) => const WorkableBondingDetailPage()),
               );
             },
             style: ElevatedButton.styleFrom(
