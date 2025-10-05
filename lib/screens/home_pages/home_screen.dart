@@ -20,14 +20,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  // Definisikan halaman di sini untuk akses yang mudah. Key diperlukan untuk stabilitas.
-  final List<Widget> _pages = [
-    const HomePageContent(key: ValueKey('home_page')),
-    const StockScreen(key: ValueKey('stock_screen')),
-    const ReportScreen(key: ValueKey('report_screen')),
-    const MoreScreen(key: ValueKey('more_screen')),
-  ];
-
   void _onTap(int index) {
     if (_currentIndex == index) return;
     setState(() {
@@ -40,20 +32,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: const CustomAppBar(),
-      // SOLUSI DEFINITIF: Menggunakan Stack + Offstage
-      // Ini adalah pengganti yang lebih eksplisit untuk IndexedStack dan seringkali
-      // lebih andal dalam kasus-kasus edge yang kompleks di mana IndexedStack gagal.
-      body: Stack(
-        children: List.generate(_pages.length, (index) {
-          return Offstage(
-            offstage: _currentIndex != index,
-            // TickerMode memastikan animasi di halaman yang tidak terlihat dijeda.
-            child: TickerMode(
-              enabled: _currentIndex == index,
-              child: _pages[index],
-            ),
-          );
-        }),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: const [
+          HomePageContent(key: ValueKey('home_page')),
+          StockScreen(key: ValueKey('stock_screen')),
+          ReportScreen(key: ValueKey('report_screen')),
+          MoreScreen(key: ValueKey('more_screen')),
+        ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
