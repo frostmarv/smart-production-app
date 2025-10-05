@@ -135,31 +135,60 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            onPressed: _captureAndShare,
-            tooltip: "Bagikan Gambar",
+          PopupMenuButton<String>(
             color: Colors.white,
-          ),
-          IconButton(
-            icon: const Icon(Icons.download_outlined),
-            onPressed: _downloadImage,
-            tooltip: "Download as Image",
-            color: Colors.white,
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              onPressed: _fetchData,
-              tooltip: "Refresh Data",
-              color: Colors.white,
-            ),
+            onSelected: (value) {
+              switch (value) {
+                case 'share':
+                  _captureAndShare();
+                  break;
+                case 'download':
+                  _downloadImage();
+                  break;
+                case 'refresh':
+                  _fetchData();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'share',
+                child: Row(
+                  children: [
+                    Icon(Icons.share_outlined, color: Color(0xFF3B82F6)),
+                    SizedBox(width: 12),
+                    Text("Bagikan Gambar"),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'download',
+                child: Row(
+                  children: [
+                    Icon(Icons.download_outlined, color: Color(0xFF2563EB)),
+                    SizedBox(width: 12),
+                    Text("Download Gambar"),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'refresh',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh_rounded, color: Colors.green),
+                    SizedBox(width: 12),
+                    Text("Refresh Data"),
+                  ],
+                ),
+              ),
+            ],
+            tooltip: "Opsi",
+            icon: const Icon(Icons.more_vert, color: Colors.white),
           ),
+          const SizedBox(width: 12),
         ],
       ),
       backgroundColor: const Color(0xFFF8FAFC),
@@ -391,21 +420,20 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   }
 
   Widget _buildTableContent(AsyncSnapshot<List<dynamic>> snapshot) {
-    // Header selalu ditampilkan
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildTableHeader(),
           const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
 
-          // Body: loading, error, empty, atau data
           if (snapshot.connectionState == ConnectionState.waiting)
-            ...List.generate(5, (index) => _buildSkeletonRow())
+            ...List.generate(4, (index) => _buildSkeletonRow())
           else if (snapshot.hasError)
-            ...[_buildMessageRow('Gagal memuat data. Silakan coba lagi.', isError: true)]
-          else if (!snapshot.hasData || snapshot.data!.isEmpty)
-            ...[_buildMessageRow('Tidak ada data tersedia.', isError: false)]
+            _buildErrorPlaceholder('Gagal memuat data. Silakan coba lagi.')
+          else if (snapshot.data == null || snapshot.data!.isEmpty)
+            _buildEmptyPlaceholder('Tidak ada data tersedia.')
           else
             ...snapshot.data!.map((item) => _buildTableRow(item, NumberFormat("#,##0", "en_US"))).toList(),
         ],
@@ -416,25 +444,27 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   Widget _buildTableHeader() {
     return Row(
       children: [
-        Expanded(flex: 1, child: _headerCell('WEEK')),
-        Expanded(flex: 3, child: _headerCell('SHIP TO NAME')),
+        Expanded(flex: 1, child: _headerCell('Week')),
+        Expanded(flex: 3, child: _headerCell('Ship To')),
         Expanded(flex: 2, child: _headerCell('SKU')),
-        Expanded(flex: 1, child: _headerCell('QTY', textAlign: TextAlign.end)),
-        Expanded(flex: 1, child: _headerCell('REMAIN', textAlign: TextAlign.end)),
-        Expanded(flex: 2, child: _headerCell('STATUS')),
+        Expanded(flex: 1, child: _headerCell('Order Qty', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('Remain', textAlign: TextAlign.end)),
+        Expanded(flex: 2, child: _headerCell('Remarks')),
+        Expanded(flex: 2, child: _headerCell('Status')),
       ],
     );
   }
 
   Widget _headerCell(String text, {TextAlign textAlign = TextAlign.start}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       child: Text(
         text,
         style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF64748B),
-          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF475569),
+          fontSize: 13,
+          letterSpacing: 0.3,
         ),
         textAlign: textAlign,
         overflow: TextOverflow.ellipsis,
@@ -464,6 +494,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
                 textAlign: TextAlign.end,
               ),
             ),
+            Expanded(flex: 2, child: _dataCell(item['remarks'] ?? '-')),
             Expanded(flex: 2, child: _buildStatusChip(item['status'] ?? 'Unknown')),
           ],
         ),
@@ -474,13 +505,13 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
 
   Widget _dataCell(String text, {TextAlign textAlign = TextAlign.start}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       child: Text(
         text,
         style: const TextStyle(
           fontSize: 14,
           color: Color(0xFF1E293B),
-          height: 1.3,
+          height: 1.4,
         ),
         textAlign: textAlign,
         overflow: TextOverflow.ellipsis,
@@ -489,29 +520,41 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   }
 
   Widget _buildStatusChip(String status) {
-    Color bgColor, textColor;
+    Color bgColor, textColor, borderColor;
     final lower = status.toLowerCase();
     if (lower == 'not started') {
       bgColor = const Color(0xFFFFF9DB);
       textColor = const Color(0xFF854D0E);
+      borderColor = const Color(0xFFFEDF89);
     } else if (lower == 'running' || lower == 'in progress') {
       bgColor = const Color(0xFFDBEAFE);
       textColor = const Color(0xFF1E40AF);
+      borderColor = const Color(0xFF93C5FD);
     } else if (lower == 'completed') {
       bgColor = const Color(0xFFDCFCE7);
       textColor = const Color(0xFF166534);
+      borderColor = const Color(0xFF86EFAC);
     } else {
       bgColor = const Color(0xFFE2E8F0);
       textColor = const Color(0xFF334155);
+      borderColor = const Color(0xFFCBD5E1);
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: bgColor,
+          border: Border.all(color: borderColor.withOpacity(0.4), width: 1),
           borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: bgColor.withOpacity(0.3),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
         child: Text(
           status,
@@ -531,12 +574,13 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       children: [
         Row(
           children: [
-            Expanded(flex: 1, child: _skeletonCell(width: 40)),
-            Expanded(flex: 3, child: _skeletonCell(width: 120)),
-            Expanded(flex: 2, child: _skeletonCell(width: 80)),
-            Expanded(flex: 1, child: _skeletonCell(width: 50)),
-            Expanded(flex: 1, child: _skeletonCell(width: 50)),
-            Expanded(flex: 2, child: _skeletonCell(width: 90)),
+            Expanded(flex: 1, child: _skeletonCell()),
+            Expanded(flex: 3, child: _skeletonCell()),
+            Expanded(flex: 2, child: _skeletonCell()),
+            Expanded(flex: 1, child: _skeletonCell()),
+            Expanded(flex: 1, child: _skeletonCell()),
+            Expanded(flex: 2, child: _skeletonCell()),
+            Expanded(flex: 2, child: _skeletonCell()),
           ],
         ),
         const Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -544,12 +588,11 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
     );
   }
 
-  Widget _skeletonCell({double? width}) {
+  Widget _skeletonCell() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       child: Container(
         height: 16,
-        width: width,
         decoration: BoxDecoration(
           color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(6),
@@ -558,25 +601,35 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
     );
   }
 
-  Widget _buildMessageRow(String message, {required bool isError}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 28),
-      child: Center(
+  Widget _buildErrorPlaceholder(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (isError)
-              Icon(Icons.error_outline, color: Colors.red, size: 24)
-            else
-              Icon(Icons.info_outline, color: const Color(0xFF64748B), size: 24),
-            const SizedBox(height: 8),
+            Icon(Icons.cloud_off, color: Colors.red.withOpacity(0.6), size: 48),
+            const SizedBox(height: 16),
             Text(
               message,
-              style: TextStyle(
-                color: isError ? Colors.red : const Color(0xFF64748B),
-                fontSize: 14,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
-              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _fetchData,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text("Coba Lagi"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3B82F6),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
             ),
           ],
         ),
@@ -584,7 +637,30 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
     );
   }
 
-  // --- Reused UI Helpers ---
+  Widget _buildEmptyPlaceholder(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.table_chart, color: const Color(0xFF94A3B8), size: 48),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSummarySection(int total, int running, int notStarted, int completed) {
     return Column(
       children: [

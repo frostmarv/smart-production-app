@@ -1,22 +1,18 @@
-
 // lib/screens/report/report_screen.dart
 import 'package:flutter/material.dart';
 
-// Menghapus import yang tidak perlu karena semua departemen "Coming Soon"
-// import 'package:smart_production_app/screens/departments/bonding/bonding_home_screen.dart';
-// import 'package:smart_production_app/screens/departments/cutting/cutting_home_screen.dart';
-// import 'package:smart_production_app/screens/departments/packing_foam/packing_foam_home_screen.dart';
-// import 'package:smart_production_app/screens/departments/packing_spring/packing_spring_home_screen.dart';
-// import 'package:smart_production_app/screens/departments/spring_core/spring_core_home_screen.dart';
+// Import halaman departemen yang akan diaktifkan
+import 'package:zinus_production/screens/departments/bonding/bonding_home_screen.dart';
 
 class ReportScreen extends StatelessWidget {
   const ReportScreen({super.key});
 
-  // Mengubah semua 'screen' menjadi null agar menampilkan "Coming Soon"
+  // Tentukan halaman mana yang aktif dan mana yang "Coming Soon"
   static const List<Map<String, dynamic>> _departments = [
     {'name': 'Packing Foam', 'icon': Icons.inventory_rounded, 'color': Color(0xFF10B981), 'screen': null},
     {'name': 'Packing Spring', 'icon': Icons.precision_manufacturing_rounded, 'color': Color(0xFF3B82F6), 'screen': null},
-    {'name': 'Bonding', 'icon': Icons.build_rounded, 'color': Color(0xFFF59E0B), 'screen': null},
+    // FIX: Mengaktifkan navigasi untuk Bonding
+    {'name': 'Bonding', 'icon': Icons.build_rounded, 'color': Color(0xFFF59E0B), 'screen': BondingHomeScreen()},
     {'name': 'Cutting', 'icon': Icons.content_cut_rounded, 'color': Color(0xFFEF4444), 'screen': null},
     {'name': 'Spring Core', 'icon': Icons.settings_rounded, 'color': Color(0xFF06B6D4), 'screen': null},
     {'name': 'Sewing', 'icon': Icons.design_services_rounded, 'color': Color(0xFF8B5CF6), 'screen': null},
@@ -105,7 +101,7 @@ class ReportScreen extends StatelessWidget {
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 child: GestureDetector(
-                  onTap: () => _navigateToDepartment(context, department['name'], screen),
+                  onTap: () => _navigateToDepartment(context, department['name'] as String, screen),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -128,7 +124,7 @@ class ReportScreen extends StatelessWidget {
                             color: color.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Icon(department['icon'], color: color, size: 28),
+                          child: Icon(department['icon'] as IconData, color: color, size: 28),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -136,7 +132,7 @@ class ReportScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                department['name'],
+                                department['name'] as String,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,

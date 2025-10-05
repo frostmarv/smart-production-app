@@ -1,7 +1,7 @@
-
 // lib/screens/home_pages/home/home_page_content.dart
 import 'package:flutter/material.dart';
-import 'package:zinus_production/screens/home_pages/workable/workable_page_content.dart'; // Impor halaman workable
+import 'package:zinus_production/screens/home_pages/workable/bonding/workable_bonding_page.dart';
+import 'package:zinus_production/screens/home_pages/more/more_home_page.dart'; 
 
 class HomePageContent extends StatelessWidget {
   const HomePageContent({super.key});
@@ -58,7 +58,122 @@ class HomePageContent extends StatelessWidget {
           ),
           const SizedBox(height: 32),
 
-          // Quick Stats
+          // === QUICK ACCESS SECTION ===
+          const Text(
+            "Quick Access :",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // --- SECTION 1: WORKABLE ---
+          _buildSectionHeader("Workable"),
+          const SizedBox(height: 8),
+          _buildGrid(context, [
+            _buildQuickAccessItem(
+              context,
+              "Bonding",
+              Icons.factory_rounded,
+              Colors.blue,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WorkableBondingPage()),
+                );
+              },
+            ),
+            _buildQuickAccessItem(
+              context,
+              "Packing Foam",
+              Icons.inventory_2_outlined,
+              Colors.green,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Packing Foam - Halaman belum siap')),
+                );
+              },
+            ),
+            _buildQuickAccessItem(
+              context,
+              "Packing Spring",
+              Icons.safety_check_rounded,
+              Colors.orange,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Packing Spring - Halaman belum siap')),
+                );
+              },
+            ),
+          ]),
+          const SizedBox(height: 24),
+
+          // --- SECTION 2: DEPARTEMENS ---
+          _buildSectionHeader("Departemens"),
+          const SizedBox(height: 8),
+          _buildGrid(context, [
+            _buildQuickAccessItem(
+              context,
+              "Packing Foam",
+              Icons.inventory_2_outlined,
+              Colors.green,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Packing Foam - Halaman belum siap')),
+                );
+              },
+            ),
+            _buildQuickAccessItem(
+              context,
+              "Packing Spring",
+              Icons.safety_check_rounded,
+              Colors.orange,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Packing Spring - Halaman belum siap')),
+                );
+              },
+            ),
+            _buildQuickAccessItem(
+              context,
+              "Bonding",
+              Icons.factory_rounded,
+              Colors.blue,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WorkableBondingPage()),
+                );
+              },
+            ),
+            _buildQuickAccessItem(
+              context,
+              "Lainnya",
+              Icons.more_horiz_rounded,
+              Colors.grey,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  // FIX: Menghapus const dan menggunakan nama kelas yang benar dari file yang diimpor
+                  MaterialPageRoute(builder: (context) => const MoreHomeScreen()), 
+                );
+              },
+            ),
+          ]),
+
+          // === QUICK STATS (DIPINDAH KE BAWAH) ===
+          const SizedBox(height: 32),
+          const Text(
+            "Quick Stats",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -80,37 +195,12 @@ class HomePageContent extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 32),
-
-          // === MENU BARU: WORKABLE ===
-          const Text(
-            "Quick Access",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1E293B),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildMenuCard(
-            context,
-            title: "Workable",
-            subtitle: "Manage and view workable tasks",
-            icon: Icons.work_history_rounded,
-            color: const Color(0xFF8B5CF6),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const WorkablePageContent()),
-              );
-            },
-          ),
         ],
       ),
     );
   }
 
-  // Helper untuk stat card
+  // Helper: Stat Card
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -159,61 +249,95 @@ class HomePageContent extends StatelessWidget {
     );
   }
 
-  // Helper untuk menu card (seperti di MoreScreen)
-  Widget _buildMenuCard(BuildContext context, {required String title, required String subtitle, required IconData icon, required Color color, required VoidCallback onTap}) {
+  // Helper: Section Header
+  Widget _buildSectionHeader(String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF1E293B),
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  // Helper: Grid Item (mirip DANA)
+  Widget _buildQuickAccessItem(BuildContext context, String label, IconData icon, Color color, {VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap ?? () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Buka $label')),
+        );
+      },
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              blurRadius: 6,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF1E293B),
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF94A3B8), size: 16),
           ],
         ),
       ),
+    );
+  }
+
+  // Helper: Grid Layout (Wrap 4 kolom)
+  Widget _buildGrid(BuildContext context, List<Widget> items) {
+    // Get screen width to calculate item width
+    double screenWidth = MediaQuery.of(context).size.width;
+    // Padding on the SingleChildScrollView is 20 on each side
+    double containerWidth = screenWidth - 40; 
+    // Spacing between items
+    double spacing = 12;
+    // Calculate width for each item (4 items per row)
+    double itemWidth = (containerWidth - (spacing * 3)) / 4;
+
+    return Wrap(
+      spacing: spacing,
+      runSpacing: 12,
+      children: items.map((item) {
+        return SizedBox(
+          width: itemWidth,
+          child: item,
+        );
+      }).toList(),
     );
   }
 }

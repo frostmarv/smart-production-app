@@ -1,7 +1,7 @@
 // lib/screens/departments/bonding/bonding_home_screen.dart
 import 'package:flutter/material.dart';
 // --- Import screen-screen spesifik untuk Bonding ---
-import 'summary/input_summary_screen.dart'; // Sesuaikan path jika berbeda
+import 'summary/input_summary_bonding_screen.dart'; // Sesuaikan path jika berbeda
 // import 'losstime/input_losstime_screen.dart'; // Nanti kalau ada
 // import 'output/input_output_screen.dart'; // Nanti kalau ada
 
@@ -226,7 +226,7 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                         onTap: () {
                           Navigator.push(
                             context,
-                            _createRoute(const InputSummaryScreen()),
+                            _createRoute(const InputSummaryBondingScreen()),
                           );
                         },
                       ),
