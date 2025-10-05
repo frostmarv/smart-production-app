@@ -17,46 +17,22 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  late final List<Widget> _pages;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
 
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-
-    // Menggunakan widget yang sudah diimpor dari file lain
-    _pages = const [
-      HomePageContent(),
-      StockScreen(),
-      ReportScreen(),
-      MoreScreen(),
-    ];
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
+  // Definisikan halaman di sini untuk akses yang mudah. Key diperlukan untuk stabilitas.
+  final List<Widget> _pages = [
+    const HomePageContent(key: ValueKey('home_page')),
+    const StockScreen(key: ValueKey('stock_screen')),
+    const ReportScreen(key: ValueKey('report_screen')),
+    const MoreScreen(key: ValueKey('more_screen')),
+  ];
 
   void _onTap(int index) {
     if (_currentIndex == index) return;
     setState(() {
       _currentIndex = index;
     });
-    _animationController.reset();
-    _animationController.forward();
   }
 
   @override
@@ -64,12 +40,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: const CustomAppBar(),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: IndexedStack(
-          index: _currentIndex,
-          children: _pages,
-        ),
+      // SOLUSI DEFINITIF: Menggunakan Stack + Offstage
+      // Ini adalah pengganti yang lebih eksplisit untuk IndexedStack dan seringkali
+      // lebih andal dalam kasus-kasus edge yang kompleks di mana IndexedStack gagal.
+      body: Stack(
+        children: List.generate(_pages.length, (index) {
+          return Offstage(
+            offstage: _currentIndex != index,
+            // TickerMode memastikan animasi di halaman yang tidak terlihat dijeda.
+            child: TickerMode(
+              enabled: _currentIndex == index,
+              child: _pages[index],
+            ),
+          );
+        }),
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
