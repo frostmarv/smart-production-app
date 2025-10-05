@@ -33,7 +33,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
   // === AUTO-FILLED DATA ===
   int? _quantityOrder;
   int? _remainQuantity;
-  int? _progress; // 👈 TAMBAHKAN INI
+  int? _progress;
   String? _week;
 
   // === LOADING STATES ===
@@ -41,7 +41,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
   bool _loadingPoNumbers = false;
   bool _loadingCustomerPos = false;
   bool _loadingSkus = false;
-  bool _loadingWeeks = false;
+  bool _loadingData = false; // Unified loading state
 
   // === DATA LIST ===
   List<dynamic> _customers = [];
@@ -116,7 +116,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
           _selectedSku = null;
           _quantityOrder = null;
           _remainQuantity = null;
-          _progress = null; // 👈 reset
+          _progress = null;
           _week = null;
           _loadingPoNumbers = false;
         });
@@ -141,7 +141,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
           _selectedSku = null;
           _quantityOrder = null;
           _remainQuantity = null;
-          _progress = null; // 👈 reset
+          _progress = null;
           _week = null;
           _loadingCustomerPos = false;
         });
@@ -164,7 +164,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
           _selectedSku = null;
           _quantityOrder = null;
           _remainQuantity = null;
-          _progress = null; // 👈 reset
+          _progress = null;
           _week = null;
           _loadingSkus = false;
         });
@@ -177,47 +177,69 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
     }
   }
 
-  Future<void> _loadWeeksAndQty(String customerPo, String sku) async {
-    setState(() => _loadingWeeks = true);
+  Future<void> _loadAllData(String customerPo, String sku) async {
+    setState(() => _loadingData = true);
     try {
+      // 1. Ambil QUANTITY ORDER dari qty-plans
+      final qtyPlansData = await _repo.getQtyPlans(customerPo, sku);
+      int? qtyOrder;
+      List<dynamic>? sCodesList;
+      
+      if (qtyPlansData.isNotEmpty) {
+        final firstPlan = qtyPlansData[0] as Map<String, dynamic>;
+        // Quantity Order bisa berupa int atau string
+        final qtyValue = firstPlan['value'];
+        qtyOrder = qtyValue is int 
+            ? qtyValue 
+            : int.tryParse(qtyValue.toString());
+        
+        sCodesList = firstPlan['s_codes'] as List<dynamic>?;
+      }
+
+      // 2. Ambil WEEK dari weeks
       final weeksData = await _repo.getWeeks(customerPo, sku);
       String? weekValue;
-      int? progressValue;
-
       if (weeksData.isNotEmpty) {
         final firstWeek = weeksData[0] as Map<String, dynamic>;
-        weekValue = firstWeek['value'] as String?;
+        weekValue = firstWeek['value']?.toString();
+      }
 
-        // Coba ambil progress dari weeksData
-        progressValue = firstWeek['progress'] as int?;
-
-        final sCodes = firstWeek['s_codes'] as List?;
-        if (sCodes != null && sCodes.isNotEmpty) {
-          final firstSCode = sCodes[0] as Map<String, dynamic>;
-          final sCode = firstSCode['s_code'] as String?;
-          if (sCode != null) {
-            final remainData = await _repo.getRemainQuantity(customerPo, sku, sCode);
-            // Jika belum dapat progress, coba dari remainData
-            progressValue ??= remainData['progress'] as int?;
-            setState(() {
-              _remainQuantity = remainData['remainQuantity'] as int?;
-              _quantityOrder = remainData['quantityOrder'] as int?;
-            });
-          }
+      // 3. Ambil REMAIN QUANTITY (butuh sCode)
+      int? remainQty;
+      int? progressValue;
+      
+      if (sCodesList != null && sCodesList.isNotEmpty) {
+        final firstSCode = sCodesList[0] as Map<String, dynamic>;
+        final sCode = firstSCode['s_code']?.toString();
+        if (sCode != null) {
+          final remainData = await _repo.getRemainQuantity(customerPo, sku, sCode);
+          remainQty = remainData['remainQuantity'] is int
+              ? remainData['remainQuantity'] as int
+              : int.tryParse(remainData['remainQuantity'].toString());
+          
+          qtyOrder ??= remainData['quantityOrder'] is int
+              ? remainData['quantityOrder'] as int
+              : int.tryParse(remainData['quantityOrder'].toString());
+          
+          progressValue = remainData['progress'] is int
+              ? remainData['progress'] as int
+              : int.tryParse(remainData['progress'].toString());
         }
       }
 
       if (mounted) {
         setState(() {
-          _week = weekValue;
+          _quantityOrder = qtyOrder;
+          _remainQuantity = remainQty;
           _progress = progressValue;
-          _loadingWeeks = false;
+          _week = weekValue;
+          _loadingData = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _loadingWeeks = false);
-        _showError('Gagal memuat data Week/Quantity');
+        setState(() => _loadingData = false);
+        _showError('Gagal memuat data master');
       }
     }
   }
@@ -578,7 +600,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
                 onChanged: (val) {
                   setState(() => _selectedSku = val);
                   if (val != null && _selectedCustomerPo != null) {
-                    _loadWeeksAndQty(_selectedCustomerPo!, val);
+                    _loadAllData(_selectedCustomerPo!, val);
                   }
                 },
                 showLoading: _loadingSkus,
@@ -587,15 +609,15 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
               // Quantity Order
               _buildLabeledDisplay(
                 label: 'Quantity Order',
-                value: _quantityOrder?.toString(),
-                loading: _loadingWeeks,
+                value: _quantityOrder?.toString() ?? '-',
+                loading: _loadingData,
               ),
 
-              // Progress ← BARU DITAMBAHKAN
+              // Progress
               _buildLabeledDisplay(
                 label: 'Progress',
                 value: _progress?.toString() ?? '0',
-                loading: _loadingWeeks,
+                loading: _loadingData,
               ),
 
               // Quantity Produksi
@@ -617,15 +639,15 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
               // Remain Quantity
               _buildLabeledDisplay(
                 label: 'Remain Quantity',
-                value: _remainQuantity?.toString(),
-                loading: _loadingWeeks,
+                value: _remainQuantity?.toString() ?? '-',
+                loading: _loadingData,
               ),
 
               // Week
               _buildLabeledDisplay(
                 label: 'Week',
-                value: _week,
-                loading: _loadingWeeks,
+                value: _week ?? '-',
+                loading: _loadingData,
               ),
 
               const SizedBox(height: 24),

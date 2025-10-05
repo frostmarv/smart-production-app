@@ -448,6 +448,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
         Expanded(flex: 3, child: _headerCell('Ship To')),
         Expanded(flex: 2, child: _headerCell('SKU')),
         Expanded(flex: 1, child: _headerCell('Order Qty', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('Qty Produksi', textAlign: TextAlign.end)), // 👈 BARU
         Expanded(flex: 1, child: _headerCell('Remain', textAlign: TextAlign.end)),
         Expanded(flex: 2, child: _headerCell('Remarks')),
         Expanded(flex: 2, child: _headerCell('Status')),
@@ -484,6 +485,13 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
               flex: 1,
               child: _dataCell(
                 numberFormat.format(item['quantityOrder'] ?? 0),
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded( // 👈 BARU: Qty Produksi (progress)
+              flex: 1,
+              child: _dataCell(
+                numberFormat.format(item['progress'] ?? 0),
                 textAlign: TextAlign.end,
               ),
             ),
@@ -578,6 +586,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
             Expanded(flex: 3, child: _skeletonCell()),
             Expanded(flex: 2, child: _skeletonCell()),
             Expanded(flex: 1, child: _skeletonCell()),
+            Expanded(flex: 1, child: _skeletonCell()), // 👈 untuk Qty Produksi
             Expanded(flex: 1, child: _skeletonCell()),
             Expanded(flex: 2, child: _skeletonCell()),
             Expanded(flex: 2, child: _skeletonCell()),
