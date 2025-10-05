@@ -24,8 +24,8 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.zinus.production.smart_production_app"
-    compileSdk 34
-    ndkVersion "25.1.8937393"
+    compileSdk 36
+    ndkVersion "27.0.12077973"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -47,6 +47,7 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         setProperty("archivesBaseName", "zinus-production-v$versionName")
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -66,4 +67,6 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
+}
