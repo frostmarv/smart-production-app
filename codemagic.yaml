@@ -11,6 +11,7 @@ workflows:
         - app_credentials
       vars:
         PACKAGE_NAME: "com.zinus.production.smart_production_app"
+        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
       flutter: 3.24.5
       java: 17
     scripts:
@@ -29,10 +30,10 @@ workflows:
         ignore_failure: true
       - name: Build Release APK (Split per ABI)
         script: |
-          flutter build apk --release --split-per-abi
+          flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=$API_BASE_URL
       - name: Build Universal APK
         script: |
-          flutter build apk --release
+          flutter build apk --release --dart-define=API_BASE_URL=$API_BASE_URL
       - name: Rename APK files
         script: |
           cd build/app/outputs/flutter-apk
@@ -51,7 +52,7 @@ workflows:
       # Uncomment below to build AAB for Play Store
       # - name: Build App Bundle (AAB)
       #   script: |
-      #     flutter build appbundle --release
+      #     flutter build appbundle --release --dart-define=API_BASE_URL=$API_BASE_URL
     artifacts:
       - build/app/outputs/flutter-apk/zinus-production-*.apk
       # Uncomment below to include AAB in artifacts
@@ -88,6 +89,7 @@ workflows:
         BUNDLE_ID: "com.zinus.production.smartProductionApp"
         XCODE_WORKSPACE: "Runner.xcworkspace"
         XCODE_SCHEME: "Runner"
+        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
       flutter: 3.24.5
       xcode: latest
       cocoapods: default
@@ -107,6 +109,7 @@ workflows:
       - name: Build ipa for distribution
         script: |
           flutter build ipa --release \
+            --dart-define=API_BASE_URL=$API_BASE_URL \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
@@ -139,6 +142,7 @@ workflows:
         - app_credentials
       vars:
         PACKAGE_NAME: "com.zinus.production.smart_production_app"
+        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
       flutter: 3.24.5
       java: 17
     scripts:
@@ -153,10 +157,10 @@ workflows:
           flutter pub run flutter_launcher_icons
       - name: Build Split APKs (per ABI)
         script: |
-          flutter build apk --release --split-per-abi
+          flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=$API_BASE_URL
       - name: Build Universal APK
         script: |
-          flutter build apk --release
+          flutter build apk --release --dart-define=API_BASE_URL=$API_BASE_URL
       - name: Rename APK files
         script: |
           cd build/app/outputs/flutter-apk
@@ -175,7 +179,7 @@ workflows:
       # Uncomment below to build AAB for Play Store
       # - name: Build App Bundle (AAB)
       #   script: |
-      #     flutter build appbundle --release
+      #     flutter build appbundle --release --dart-define=API_BASE_URL=$API_BASE_URL
     artifacts:
       - build/app/outputs/flutter-apk/zinus-production-*.apk
       # Uncomment below to include AAB in artifacts
@@ -197,6 +201,8 @@ workflows:
     environment:
       groups:
         - app_credentials
+      vars:
+        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
       flutter: 3.24.5
       java: 17
     triggering:
@@ -226,7 +232,7 @@ workflows:
         ignore_failure: true
       - name: Build debug APK
         script: |
-          flutter build apk --debug
+          flutter build apk --debug --dart-define=API_BASE_URL=$API_BASE_URL
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
     publishing:
