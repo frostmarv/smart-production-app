@@ -49,10 +49,6 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
       Uint8List? image = await _screenshotController.capture();
       if (image == null) return;
 
-      final dir = await getApplicationDocumentsDirectory();
-      final tempFile = File('${dir.path}/temp_workable_detail.png');
-      await tempFile.writeAsBytes(image);
-
       await Share.shareXFiles([
         XFile.fromData(
           image,
@@ -60,9 +56,6 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
           name: 'workable_detail_summary.png',
         ),
       ], text: 'Ini adalah detail produksi Workable Bonding');
-
-      await tempFile.delete();
-
       _showMessage('Gambar telah dibagikan!');
     } catch (e) {
       _showMessage('Gagal membagikan gambar: $e');
@@ -85,7 +78,6 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/workable_bonding_detail.png');
       await file.writeAsBytes(image);
-
       _showMessage('Gambar disimpan di:\n${file.path}');
     } catch (e) {
       _showMessage('Gagal menyimpan gambar: $e');
@@ -103,6 +95,227 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+      ),
+    );
+  }
+
+  void _showFullTableLandscapePopup(List<dynamic> items) {
+    final numberFormat = NumberFormat("#,##0", "en_US");
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Theme(
+          data: ThemeData.light(),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.zero,
+            child: Container(
+              color: Colors.white,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF6366F1),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Workable Detail - Full View",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: InteractiveViewer(
+                      boundaryMargin: const EdgeInsets.all(20),
+                      minScale: 0.5,
+                      maxScale: 4.0,
+                      constrained: false,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header
+                              Container(
+                                color: const Color(0xFFF1F5F9),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  children: [
+                                    SizedBox(width: 100, child: _popupHeaderCell('CUSTOMER PO')),
+                                    SizedBox(width: 160, child: _popupHeaderCell('SHIP TO')),
+                                    SizedBox(width: 120, child: _popupHeaderCell('SKU')),
+                                    SizedBox(width: 60, child: _popupHeaderCell('WEEK')),
+                                    SizedBox(width: 80, child: _popupHeaderCell('QTY', textAlign: TextAlign.end)),
+                                    SizedBox(width: 60, child: _popupHeaderCell('L1', textAlign: TextAlign.end)),
+                                    SizedBox(width: 60, child: _popupHeaderCell('L2', textAlign: TextAlign.end)),
+                                    SizedBox(width: 60, child: _popupHeaderCell('L3', textAlign: TextAlign.end)),
+                                    SizedBox(width: 60, child: _popupHeaderCell('L4', textAlign: TextAlign.end)),
+                                    SizedBox(width: 60, child: _popupHeaderCell('HOLE', textAlign: TextAlign.end)),
+                                    SizedBox(width: 80, child: _popupHeaderCell('REMAIN', textAlign: TextAlign.end)),
+                                    SizedBox(width: 140, child: _popupHeaderCell('REMARKS')),
+                                    SizedBox(width: 100, child: _popupHeaderCell('STATUS')),
+                                  ],
+                                ),
+                              ),
+                              // Rows
+                              ...items.map((item) {
+                                final data = item as Map<String, dynamic>;
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: const BoxDecoration(
+                                    border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(width: 100, child: _popupDataCell(data['customerPO'] ?? '-')),
+                                      SizedBox(width: 160, child: _popupDataCell(data['shipToName'] ?? '-')),
+                                      SizedBox(width: 120, child: _popupDataCell(data['sku'] ?? '-')),
+                                      SizedBox(width: 60, child: _popupDataCell(data['week'].toString())),
+                                      SizedBox(
+                                        width: 80,
+                                        child: _popupDataCell(
+                                          numberFormat.format(data['quantityOrder'] ?? 0),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 60,
+                                        child: _popupDataCell(
+                                          (data['Layer 1'] ?? 0).toString(),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 60,
+                                        child: _popupDataCell(
+                                          (data['Layer 2'] ?? 0).toString(),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 60,
+                                        child: _popupDataCell(
+                                          (data['Layer 3'] ?? 0).toString(),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 60,
+                                        child: _popupDataCell(
+                                          (data['Layer 4'] ?? 0).toString(),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 60,
+                                        child: _popupDataCell(
+                                          (data['Hole'] ?? 0).toString(),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 80,
+                                        child: _popupDataCell(
+                                          numberFormat.format(data['remain'] ?? 0),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(width: 140, child: _popupDataCell(data['remarks'] ?? '-')),
+                                      SizedBox(width: 100, child: _buildStatusChipPopup(data['status'] ?? 'Unknown')),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _popupHeaderCell(String text, {TextAlign textAlign = TextAlign.start}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF475569),
+          fontSize: 12,
+        ),
+        textAlign: textAlign,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _popupDataCell(String text, {TextAlign textAlign = TextAlign.start}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13,
+          color: Color(0xFF1E293B),
+        ),
+        textAlign: textAlign,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _buildStatusChipPopup(String status) {
+    Color bgColor, textColor;
+    final lower = status.toLowerCase();
+    if (lower == 'not started') {
+      bgColor = const Color(0xFFFFF9DB);
+      textColor = const Color(0xFF854D0E);
+    } else if (lower == 'running' || lower == 'in progress') {
+      bgColor = const Color(0xFFDBEAFE);
+      textColor = const Color(0xFF1E40AF);
+    } else if (lower == 'completed') {
+      bgColor = const Color(0xFFDCFCE7);
+      textColor = const Color(0xFF166534);
+    } else {
+      bgColor = const Color(0xFFE2E8F0);
+      textColor = const Color(0xFF334155);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -136,33 +349,60 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
           ),
         ),
         actions: [
-          // Tombol Share
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            onPressed: _captureAndShare,
-            tooltip: "Bagikan Gambar",
+          PopupMenuButton<String>(
             color: Colors.white,
-          ),
-          // Tombol Download
-          IconButton(
-            icon: const Icon(Icons.download_outlined),
-            onPressed: _downloadImage,
-            tooltip: "Download as Image",
-            color: Colors.white,
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              onPressed: _fetchData,
-              tooltip: "Refresh Data",
-              color: Colors.white,
-            ),
+            onSelected: (value) {
+              switch (value) {
+                case 'share':
+                  _captureAndShare();
+                  break;
+                case 'download':
+                  _downloadImage();
+                  break;
+                case 'refresh':
+                  _fetchData();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'share',
+                child: Row(
+                  children: [
+                    Icon(Icons.share_outlined, color: Color(0xFF6366F1)),
+                    SizedBox(width: 12),
+                    Text("Bagikan Gambar"),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'download',
+                child: Row(
+                  children: [
+                    Icon(Icons.download_outlined, color: Color(0xFF8B5CF6)),
+                    SizedBox(width: 12),
+                    Text("Download Gambar"),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'refresh',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh_rounded, color: Colors.green),
+                    SizedBox(width: 12),
+                    Text("Refresh Data"),
+                  ],
+                ),
+              ),
+            ],
+            tooltip: "Opsi",
+            icon: const Icon(Icons.more_vert, color: Colors.white),
           ),
+          const SizedBox(width: 12),
         ],
       ),
       backgroundColor: const Color(0xFFF8FAFC),
@@ -194,6 +434,25 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
           _buildSummarySection(totalItems, totalQuantity, runningItems),
           const SizedBox(height: 24),
           _buildTableContainer(snapshot),
+          const SizedBox(height: 16),
+          // 👇 Tombol Detail View untuk popup landscape
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: snapshot.hasData && snapshot.data != null
+                  ? () => _showFullTableLandscapePopup(snapshot.data!)
+                  : null,
+              icon: const Icon(Icons.visibility, size: 18),
+              label: const Text("Detail View"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6366F1),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -360,9 +619,12 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
                   ],
                 ),
               ),
-              Screenshot(
-                controller: _screenshotController,
-                child: _buildTableContent(snapshot),
+              Theme(
+                data: ThemeData.light(),
+                child: Screenshot(
+                  controller: _screenshotController,
+                  child: _buildTableContent(snapshot),
+                ),
               ),
             ],
           ),
@@ -403,7 +665,9 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
     return Row(
       children: [
         Expanded(flex: 2, child: _headerCell('CUSTOMER PO')),
+        Expanded(flex: 2, child: _headerCell('SHIP TO')),
         Expanded(flex: 2, child: _headerCell('SKU')),
+        Expanded(flex: 1, child: _headerCell('WEEK')),
         Expanded(flex: 1, child: _headerCell('QTY', textAlign: TextAlign.end)),
         Expanded(flex: 1, child: _headerCell('L1', textAlign: TextAlign.end)),
         Expanded(flex: 1, child: _headerCell('L2', textAlign: TextAlign.end)),
@@ -411,6 +675,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
         Expanded(flex: 1, child: _headerCell('L4', textAlign: TextAlign.end)),
         Expanded(flex: 1, child: _headerCell('HOLE', textAlign: TextAlign.end)),
         Expanded(flex: 1, child: _headerCell('REMAIN', textAlign: TextAlign.end)),
+        Expanded(flex: 2, child: _headerCell('REMARKS')),
         Expanded(flex: 2, child: _headerCell('STATUS')),
       ],
     );
@@ -438,7 +703,9 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
         Row(
           children: [
             Expanded(flex: 2, child: _dataCell(item['customerPO'] ?? '-')),
+            Expanded(flex: 2, child: _dataCell(item['shipToName'] ?? '-')),
             Expanded(flex: 2, child: _dataCell(item['sku'] ?? '-')),
+            Expanded(flex: 1, child: _dataCell(item['week'].toString())),
             Expanded(
               flex: 1,
               child: _dataCell(
@@ -449,35 +716,35 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
             Expanded(
               flex: 1,
               child: _dataCell(
-                item['Layer 1']?.toString() ?? '0',
+                (item['Layer 1'] ?? 0).toString(),
                 textAlign: TextAlign.end,
               ),
             ),
             Expanded(
               flex: 1,
               child: _dataCell(
-                item['Layer 2']?.toString() ?? '0',
+                (item['Layer 2'] ?? 0).toString(),
                 textAlign: TextAlign.end,
               ),
             ),
             Expanded(
               flex: 1,
               child: _dataCell(
-                item['Layer 3']?.toString() ?? '0',
+                (item['Layer 3'] ?? 0).toString(),
                 textAlign: TextAlign.end,
               ),
             ),
             Expanded(
               flex: 1,
               child: _dataCell(
-                item['Layer 4']?.toString() ?? '0',
+                (item['Layer 4'] ?? 0).toString(),
                 textAlign: TextAlign.end,
               ),
             ),
             Expanded(
               flex: 1,
               child: _dataCell(
-                item['Hole']?.toString() ?? '0',
+                (item['Hole'] ?? 0).toString(),
                 textAlign: TextAlign.end,
               ),
             ),
@@ -488,6 +755,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
                 textAlign: TextAlign.end,
               ),
             ),
+            Expanded(flex: 2, child: _dataCell(item['remarks'] ?? '-')),
             Expanded(flex: 2, child: _buildStatusChip(item['status'] ?? 'Unknown')),
           ],
         ),
@@ -614,34 +882,37 @@ class _SkeletonRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
         children: [
-          Expanded(flex: 2, child: _buildSkeletonElement(width: 100)),
-          const SizedBox(width: 12),
-          Expanded(flex: 2, child: _buildSkeletonElement(width: 100)),
-          const SizedBox(width: 12),
-          Expanded(flex: 1, child: _buildSkeletonElement(width: 50)),
-          const SizedBox(width: 12),
-          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
-          const SizedBox(width: 12),
-          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
-          const SizedBox(width: 12),
-          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
-          const SizedBox(width: 12),
-          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
-          const SizedBox(width: 12),
-          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
-          const SizedBox(width: 12),
-          Expanded(flex: 1, child: _buildSkeletonElement(width: 40)),
-          const SizedBox(width: 12),
-          Expanded(flex: 2, child: _buildSkeletonElement(width: 80)),
+          Expanded(flex: 2, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 2, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 2, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 1, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 1, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 1, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 1, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 1, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 1, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 1, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 2, child: _buildSkeletonElement()),
+          const SizedBox(width: 8),
+          Expanded(flex: 2, child: _buildSkeletonElement()),
         ],
       ),
     );
   }
 
-  Widget _buildSkeletonElement({double? width}) {
+  Widget _buildSkeletonElement() {
     return Container(
       height: 20,
-      width: width,
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(8),

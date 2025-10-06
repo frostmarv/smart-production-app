@@ -11,10 +11,13 @@ class InputSummaryBondingScreen extends StatefulWidget {
       _InputSummaryBondingScreenState();
 }
 
-class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
+class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _repo = MasterDataRepository();
   final _qtyProduksiController = TextEditingController();
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   // === HEADER ===
   late DateTime _timestamp;
@@ -41,7 +44,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
   bool _loadingPoNumbers = false;
   bool _loadingCustomerPos = false;
   bool _loadingSkus = false;
-  bool _loadingData = false; // Unified loading state
+  bool _loadingData = false;
 
   // === DATA LIST ===
   List<dynamic> _customers = [];
@@ -55,11 +58,22 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
     _timestamp = DateTime.now();
     _selectedTime = _getTimeSlots('1').first;
     _loadCustomers();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+    _animationController.forward();
   }
 
   @override
   void dispose() {
     _qtyProduksiController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -74,10 +88,12 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
     } else {
       final slots = <String>[];
       for (int i = 20; i < 24; i++) {
-        slots.add('${i.toString().padLeft(2, '0')}.00 - ${(i + 1).toString().padLeft(2, '0')}.00');
+        slots.add(
+            '${i.toString().padLeft(2, '0')}.00 - ${(i + 1).toString().padLeft(2, '0')}.00');
       }
       for (int i = 0; i < 8; i++) {
-        slots.add('${i.toString().padLeft(2, '0')}.00 - ${(i + 1).toString().padLeft(2, '0')}.00');
+        slots.add(
+            '${i.toString().padLeft(2, '0')}.00 - ${(i + 1).toString().padLeft(2, '0')}.00');
       }
       return slots;
     }
@@ -184,15 +200,12 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
       final qtyPlansData = await _repo.getQtyPlans(customerPo, sku);
       int? qtyOrder;
       List<dynamic>? sCodesList;
-      
+
       if (qtyPlansData.isNotEmpty) {
         final firstPlan = qtyPlansData[0] as Map<String, dynamic>;
-        // Quantity Order bisa berupa int atau string
         final qtyValue = firstPlan['value'];
-        qtyOrder = qtyValue is int 
-            ? qtyValue 
-            : int.tryParse(qtyValue.toString());
-        
+        qtyOrder = qtyValue is int ? qtyValue : int.tryParse(qtyValue.toString());
+
         sCodesList = firstPlan['s_codes'] as List<dynamic>?;
       }
 
@@ -207,20 +220,21 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
       // 3. Ambil REMAIN QUANTITY (butuh sCode)
       int? remainQty;
       int? progressValue;
-      
+
       if (sCodesList != null && sCodesList.isNotEmpty) {
         final firstSCode = sCodesList[0] as Map<String, dynamic>;
         final sCode = firstSCode['s_code']?.toString();
         if (sCode != null) {
-          final remainData = await _repo.getRemainQuantity(customerPo, sku, sCode);
+          final remainData =
+              await _repo.getRemainQuantity(customerPo, sku, sCode);
           remainQty = remainData['remainQuantity'] is int
               ? remainData['remainQuantity'] as int
               : int.tryParse(remainData['remainQuantity'].toString());
-          
+
           qtyOrder ??= remainData['quantityOrder'] is int
               ? remainData['quantityOrder'] as int
               : int.tryParse(remainData['quantityOrder'].toString());
-          
+
           progressValue = remainData['progress'] is int
               ? remainData['progress'] as int
               : int.tryParse(remainData['progress'].toString());
@@ -247,24 +261,82 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red.shade700,
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFFDC2626),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  // === BUILDERS ===
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.blueGrey,
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
         ),
+        backgroundColor: const Color(0xFF059669),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // === PREMIUM BUILDERS ===
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(top: 24, bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3B82F6).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -276,35 +348,56 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
     required ValueChanged<String?> onChanged,
     bool enabled = true,
     bool showLoading = false,
+    IconData? icon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.blueGrey,
-            fontSize: 14,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E293B),
+              fontSize: 15,
+              letterSpacing: 0.2,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
         if (showLoading)
-          const LinearProgressIndicator(
-            minHeight: 2,
-            color: Colors.blue,
-            backgroundColor: Colors.grey,
+          Container(
+            height: 58,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+            ),
+            child: const Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                ),
+              ),
+            ),
           )
         else
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: enabled ? const Color(0xFFE2E8F0) : const Color(0xFFF1F5F9),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  color: const Color(0xFF3B82F6).withOpacity(0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -312,29 +405,53 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
               decoration: InputDecoration(
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
+                  vertical: 18,
+                  horizontal: 20,
                 ),
+                prefixIcon: icon != null
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 12, right: 8),
+                        child: Icon(icon,
+                            color: enabled
+                                ? const Color(0xFF3B82F6)
+                                : const Color(0xFF94A3B8),
+                            size: 22),
+                      )
+                    : null,
                 isDense: true,
               ),
               value: value,
               items: options.map((option) {
                 return DropdownMenuItem(
                   value: option['value'].toString(),
-                  child: Text(option['label'].toString()),
+                  child: Text(
+                    option['label'].toString(),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
                 );
               }).toList(),
               onChanged: enabled ? onChanged : null,
               isExpanded: true,
               dropdownColor: Colors.white,
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.blue),
-              hint: enabled
-                  ? const Text('Pilih...')
-                  : const Text('Pilih data sebelumnya terlebih dahulu',
-                      style: TextStyle(color: Colors.grey)),
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: enabled ? const Color(0xFF3B82F6) : const Color(0xFF94A3B8),
+                size: 28,
+              ),
+              hint: Text(
+                enabled ? 'Pilih...' : 'Pilih data sebelumnya terlebih dahulu',
+                style: TextStyle(
+                  color: enabled ? const Color(0xFF94A3B8) : const Color(0xFFCBD5E1),
+                  fontSize: 15,
+                ),
+              ),
             ),
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -343,44 +460,87 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
     required String label,
     required String? value,
     bool loading = false,
+    IconData? icon,
+    Color? accentColor,
   }) {
+    final displayColor = accentColor ?? const Color(0xFF3B82F6);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.blueGrey,
-            fontSize: 14,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E293B),
+              fontSize: 15,
+              letterSpacing: 0.2,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: [
+                displayColor.withOpacity(0.05),
+                displayColor.withOpacity(0.02),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: displayColor.withOpacity(0.2),
+              width: 1.5,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+                color: displayColor.withOpacity(0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: loading
-              ? const CircularProgressIndicator(strokeWidth: 2)
-              : Text(
-                  value ?? '-',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: displayColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Icon(icon, color: displayColor, size: 20),
                 ),
+                const SizedBox(width: 16),
+              ],
+              Expanded(
+                child: loading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                        ),
+                      )
+                    : Text(
+                        value ?? '-',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: displayColor,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -389,37 +549,65 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
     required String label,
     required TextEditingController controller,
     required String? Function(String?) validator,
+    IconData? icon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.blueGrey,
-            fontSize: 14,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E293B),
+              fontSize: 15,
+              letterSpacing: 0.2,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            prefixIcon: const Icon(Icons.production_quantity_limits_outlined,
-                color: Colors.blue),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFDC2626), width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+            prefixIcon: icon != null
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 12, right: 8),
+                    child: Icon(icon, color: const Color(0xFF3B82F6), size: 22),
+                  )
+                : null,
+          ),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E293B),
           ),
           keyboardType: TextInputType.number,
           validator: validator,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -427,257 +615,363 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Input Summary Bonding'),
+        title: const Text(
+          'Input Summary Bonding',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.3,
+          ),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.blue.shade800,
+        foregroundColor: const Color(0xFF1E293B),
         elevation: 0,
         centerTitle: false,
+        shadowColor: Colors.black.withOpacity(0.1),
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF3B82F6).withOpacity(0.1),
+                  const Color(0xFF3B82F6).withOpacity(0.3),
+                  const Color(0xFF3B82F6).withOpacity(0.1),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // === HEADER SECTION ===
-              _buildSectionHeader('Header Information'),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // === HEADER SECTION ===
+                _buildSectionHeader('Header Information', Icons.info_outline_rounded),
 
-              // Timestamp
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Timestamp',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blueGrey,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                // Timestamp
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 10),
+                      child: Text(
+                        'Timestamp',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                          fontSize: 15,
+                          letterSpacing: 0.2,
                         ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 18, horizontal: 20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF8B5CF6).withOpacity(0.08),
+                            const Color(0xFF6366F1).withOpacity(0.08),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFF8B5CF6).withOpacity(0.2),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.access_time_rounded,
+                                color: Color(0xFF8B5CF6), size: 20),
+                          ),
+                          const SizedBox(width: 16),
+                          Text(
+                            DateFormat('dd MMM yyyy, HH:mm:ss').format(_timestamp),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF8B5CF6),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Shift
+                _buildLabeledDropdown(
+                  label: 'Shift',
+                  value: _selectedShift,
+                  options: const [
+                    {'value': '1', 'label': '1'},
+                    {'value': '2', 'label': '2'},
+                  ],
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedShift = val;
+                      _selectedTime = _getTimeSlots(val ?? '1').first;
+                    });
+                  },
+                  icon: Icons.schedule_rounded,
+                ),
+
+                // Group
+                _buildLabeledDropdown(
+                  label: 'Group',
+                  value: _selectedGroup,
+                  options: const [
+                    {'value': 'A', 'label': 'A'},
+                    {'value': 'B', 'label': 'B'},
+                  ],
+                  onChanged: (val) => setState(() => _selectedGroup = val),
+                  icon: Icons.group_rounded,
+                ),
+
+                // Time
+                _buildLabeledDropdown(
+                  label: 'Time',
+                  value: _selectedTime,
+                  options: _getTimeSlots(_selectedShift ?? '1')
+                      .map((slot) => {'value': slot, 'label': slot})
+                      .toList(),
+                  onChanged: (val) => setState(() => _selectedTime = val),
+                  icon: Icons.timer_outlined,
+                ),
+
+                // Machine
+                _buildLabeledDropdown(
+                  label: 'Machine',
+                  value: _selectedMachine,
+                  options: List.generate(
+                    8,
+                    (i) => {
+                      'value': 'PUR ${i + 1}',
+                      'label': 'PUR ${i + 1}',
+                    },
+                  ),
+                  onChanged: (val) => setState(() => _selectedMachine = val),
+                  icon: Icons.precision_manufacturing_rounded,
+                ),
+
+                // Operator
+                _buildLabeledDropdown(
+                  label: 'Operator',
+                  value: _selectedOperator,
+                  options: const [
+                    {'value': 'Andi', 'label': 'Andi'},
+                    {'value': 'Budi', 'label': 'Budi'},
+                  ],
+                  onChanged: (val) => setState(() => _selectedOperator = val),
+                  icon: Icons.person_rounded,
+                ),
+
+                // === DIVIDER ===
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 16),
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        const Color(0xFF94A3B8).withOpacity(0.3),
+                        Colors.transparent,
                       ],
                     ),
-                    child: Text(
-                      DateFormat('dd MMM yyyy, HH:mm:ss')
-                          .format(_timestamp),
-                      style: const TextStyle(
+                  ),
+                ),
+
+                // === MASTER DATA SECTION ===
+                _buildSectionHeader('Form Information', Icons.description_outlined),
+
+                // Customer
+                _buildLabeledDropdown(
+                  label: 'Customer',
+                  value: _selectedCustomer,
+                  options: List<Map<String, dynamic>>.from(_customers),
+                  onChanged: (val) {
+                    setState(() => _selectedCustomer = val);
+                    if (val != null) _loadPoNumbers(val);
+                  },
+                  showLoading: _loadingCustomers,
+                  icon: Icons.business_rounded,
+                ),
+
+                // PO Number
+                _buildLabeledDropdown(
+                  label: 'PO Number',
+                  value: _selectedPoNumber,
+                  options: List<Map<String, dynamic>>.from(_poNumbers),
+                  enabled: _selectedCustomer != null,
+                  onChanged: (val) {
+                    setState(() => _selectedPoNumber = val);
+                    if (val != null) _loadCustomerPos(val);
+                  },
+                  showLoading: _loadingPoNumbers,
+                  icon: Icons.receipt_long_rounded,
+                ),
+
+                // Customer PO
+                _buildLabeledDropdown(
+                  label: 'Customer PO',
+                  value: _selectedCustomerPo,
+                  options: List<Map<String, dynamic>>.from(_customerPos),
+                  enabled: _selectedPoNumber != null,
+                  onChanged: (val) {
+                    setState(() => _selectedCustomerPo = val);
+                    if (val != null) _loadSkus(val);
+                  },
+                  showLoading: _loadingCustomerPos,
+                  icon: Icons.assignment_rounded,
+                ),
+
+                // SKU
+                _buildLabeledDropdown(
+                  label: 'SKU',
+                  value: _selectedSku,
+                  options: List<Map<String, dynamic>>.from(_skus),
+                  enabled: _selectedCustomerPo != null,
+                  onChanged: (val) {
+                    setState(() => _selectedSku = val);
+                    if (val != null && _selectedCustomerPo != null) {
+                      _loadAllData(_selectedCustomerPo!, val);
+                    }
+                  },
+                  showLoading: _loadingSkus,
+                  icon: Icons.inventory_2_rounded,
+                ),
+
+                // Quantity Order
+                _buildLabeledDisplay(
+                  label: 'Quantity Order',
+                  value: _quantityOrder?.toString() ?? '-',
+                  loading: _loadingData,
+                  icon: Icons.shopping_cart_rounded,
+                  accentColor: const Color(0xFF059669),
+                ),
+
+                // Progress
+                _buildLabeledDisplay(
+                  label: 'Progress',
+                  value: _progress?.toString() ?? '0',
+                  loading: _loadingData,
+                  icon: Icons.trending_up_rounded,
+                  accentColor: const Color(0xFFEAB308),
+                ),
+
+                // Quantity Produksi
+                _buildLabeledTextField(
+                  label: 'Quantity Produksi',
+                  controller: _qtyProduksiController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Wajib diisi';
+                    }
+                    final num = int.tryParse(value);
+                    if (num == null || num <= 0) {
+                      return 'Masukkan angka > 0';
+                    }
+                    return null;
+                  },
+                  icon: Icons.production_quantity_limits_rounded,
+                ),
+
+                // Remain Quantity
+                _buildLabeledDisplay(
+                  label: 'Remain Quantity',
+                  value: _remainQuantity?.toString() ?? '-',
+                  loading: _loadingData,
+                  icon: Icons.inventory_rounded,
+                  accentColor: const Color(0xFFDC2626),
+                ),
+
+                // Week
+                _buildLabeledDisplay(
+                  label: 'Week',
+                  value: _week ?? '-',
+                  loading: _loadingData,
+                  icon: Icons.calendar_today_rounded,
+                  accentColor: const Color(0xFF8B5CF6),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Submit Button
+                Container(
+                  width: double.infinity,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF3B82F6).withOpacity(0.4),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      if (_formKey.currentState?.validate() == true) {
+                        // TODO: Submit logic
+                        _showSuccess('Data berhasil disimpan!');
+                      }
+                    },
+                    icon: const Icon(Icons.save_rounded, size: 20),
+                    label: const Text(
+                      'Simpan Data',
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Shift
-              _buildLabeledDropdown(
-                label: 'Shift',
-                value: _selectedShift,
-                options: const [
-                  {'value': '1', 'label': '1'},
-                  {'value': '2', 'label': '2'},
-                ],
-                onChanged: (val) {
-                  setState(() {
-                    _selectedShift = val;
-                    _selectedTime = _getTimeSlots(val ?? '1').first;
-                  });
-                },
-              ),
-
-              // Group
-              _buildLabeledDropdown(
-                label: 'Group',
-                value: _selectedGroup,
-                options: const [
-                  {'value': 'A', 'label': 'A'},
-                  {'value': 'B', 'label': 'B'},
-                ],
-                onChanged: (val) => setState(() => _selectedGroup = val),
-              ),
-
-              // Time
-              _buildLabeledDropdown(
-                label: 'Time',
-                value: _selectedTime,
-                options: _getTimeSlots(_selectedShift ?? '1')
-                    .map((slot) => {'value': slot, 'label': slot})
-                    .toList(),
-                onChanged: (val) => setState(() => _selectedTime = val),
-              ),
-
-              // Machine
-              _buildLabeledDropdown(
-                label: 'Machine',
-                value: _selectedMachine,
-                options: List.generate(
-                  8,
-                  (i) => {
-                    'value': 'PUR ${i + 1}',
-                    'label': 'PUR ${i + 1}',
-                  },
                 ),
-                onChanged: (val) => setState(() => _selectedMachine = val),
-              ),
-
-              // Operator
-              _buildLabeledDropdown(
-                label: 'Operator',
-                value: _selectedOperator,
-                options: const [
-                  {'value': 'Andi', 'label': 'Andi'},
-                  {'value': 'Budi', 'label': 'Budi'},
-                ],
-                onChanged: (val) => setState(() => _selectedOperator = val),
-              ),
-
-              const Divider(height: 32, thickness: 1, color: Colors.grey),
-
-              // === MASTER DATA SECTION ===
-              _buildSectionHeader('Form Information'),
-
-              // Customer
-              _buildLabeledDropdown(
-                label: 'Customer',
-                value: _selectedCustomer,
-                options: List<Map<String, dynamic>>.from(_customers),
-                onChanged: (val) {
-                  setState(() => _selectedCustomer = val);
-                  if (val != null) _loadPoNumbers(val);
-                },
-                showLoading: _loadingCustomers,
-              ),
-
-              // PO Number
-              _buildLabeledDropdown(
-                label: 'PO Number',
-                value: _selectedPoNumber,
-                options: List<Map<String, dynamic>>.from(_poNumbers),
-                enabled: _selectedCustomer != null,
-                onChanged: (val) {
-                  setState(() => _selectedPoNumber = val);
-                  if (val != null) _loadCustomerPos(val);
-                },
-                showLoading: _loadingPoNumbers,
-              ),
-
-              // Customer PO
-              _buildLabeledDropdown(
-                label: 'Customer PO',
-                value: _selectedCustomerPo,
-                options: List<Map<String, dynamic>>.from(_customerPos),
-                enabled: _selectedPoNumber != null,
-                onChanged: (val) {
-                  setState(() => _selectedCustomerPo = val);
-                  if (val != null) _loadSkus(val);
-                },
-                showLoading: _loadingCustomerPos,
-              ),
-
-              // SKU
-              _buildLabeledDropdown(
-                label: 'SKU',
-                value: _selectedSku,
-                options: List<Map<String, dynamic>>.from(_skus),
-                enabled: _selectedCustomerPo != null,
-                onChanged: (val) {
-                  setState(() => _selectedSku = val);
-                  if (val != null && _selectedCustomerPo != null) {
-                    _loadAllData(_selectedCustomerPo!, val);
-                  }
-                },
-                showLoading: _loadingSkus,
-              ),
-
-              // Quantity Order
-              _buildLabeledDisplay(
-                label: 'Quantity Order',
-                value: _quantityOrder?.toString() ?? '-',
-                loading: _loadingData,
-              ),
-
-              // Progress
-              _buildLabeledDisplay(
-                label: 'Progress',
-                value: _progress?.toString() ?? '0',
-                loading: _loadingData,
-              ),
-
-              // Quantity Produksi
-              _buildLabeledTextField(
-                label: 'Quantity Produksi',
-                controller: _qtyProduksiController,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Wajib diisi';
-                  }
-                  final num = int.tryParse(value);
-                  if (num == null || num <= 0) {
-                    return 'Masukkan angka > 0';
-                  }
-                  return null;
-                },
-              ),
-
-              // Remain Quantity
-              _buildLabeledDisplay(
-                label: 'Remain Quantity',
-                value: _remainQuantity?.toString() ?? '-',
-                loading: _loadingData,
-              ),
-
-              // Week
-              _buildLabeledDisplay(
-                label: 'Week',
-                value: _week ?? '-',
-                loading: _loadingData,
-              ),
-
-              const SizedBox(height: 24),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() == true) {
-                      // TODO: Submit logic
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Data berhasil disimpan!')),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.save, size: 18),
-                  label: const Text('Simpan Data', style: TextStyle(fontSize: 16)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade700,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                ),
-              ),
-            ],
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),

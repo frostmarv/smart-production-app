@@ -50,10 +50,6 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       Uint8List? image = await _screenshotController.capture();
       if (image == null) return;
 
-      final dir = await getApplicationDocumentsDirectory();
-      final tempFile = File('${dir.path}/temp_workable_summary.png');
-      await tempFile.writeAsBytes(image);
-
       await Share.shareXFiles([
         XFile.fromData(
           image,
@@ -61,8 +57,6 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
           name: 'workable_summary.png',
         ),
       ], text: 'Ini adalah ringkasan Workable Bonding');
-
-      await tempFile.delete();
       _showMessage('Gambar telah dibagikan!');
     } catch (e) {
       _showMessage('Gagal membagikan gambar: $e');
@@ -102,6 +96,194 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+      ),
+    );
+  }
+
+  void _showFullTableLandscapePopup(List<dynamic> items) {
+    final numberFormat = NumberFormat("#,##0", "en_US");
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Theme(
+          data: ThemeData.light(), // ✅ Force light mode
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.zero,
+            child: Container(
+              color: Colors.white,
+              child: Column(
+                children: [
+                  // Header with close button
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF3B82F6),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Workable Bonding - Full Table",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: InteractiveViewer(
+                      boundaryMargin: const EdgeInsets.all(20),
+                      minScale: 0.5,
+                      maxScale: 4.0,
+                      constrained: false,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header
+                              Container(
+                                color: const Color(0xFFF1F5F9),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  children: [
+                                    SizedBox(width: 60, child: _popupHeaderCell('Week')),
+                                    SizedBox(width: 180, child: _popupHeaderCell('Ship To')),
+                                    SizedBox(width: 140, child: _popupHeaderCell('SKU')),
+                                    SizedBox(width: 100, child: _popupHeaderCell('Order Qty', textAlign: TextAlign.end)),
+                                    SizedBox(width: 100, child: _popupHeaderCell('Progress', textAlign: TextAlign.end)),
+                                    SizedBox(width: 100, child: _popupHeaderCell('Remain', textAlign: TextAlign.end)),
+                                    SizedBox(width: 160, child: _popupHeaderCell('Remarks')),
+                                    SizedBox(width: 120, child: _popupHeaderCell('Status')),
+                                  ],
+                                ),
+                              ),
+                              // Rows
+                              ...items.map((item) {
+                                final data = item as Map<String, dynamic>;
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: const BoxDecoration(
+                                    border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(width: 60, child: _popupDataCell(data['week'].toString())),
+                                      SizedBox(width: 180, child: _popupDataCell(data['shipToName'] ?? '-')),
+                                      SizedBox(width: 140, child: _popupDataCell(data['sku'] ?? '-')),
+                                      SizedBox(
+                                        width: 100,
+                                        child: _popupDataCell(
+                                          numberFormat.format(data['quantityOrder'] ?? 0),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 100,
+                                        child: _popupDataCell(
+                                          numberFormat.format(data['progress'] ?? 0),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 100,
+                                        child: _popupDataCell(
+                                          numberFormat.format(data['remain'] ?? 0),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                      SizedBox(width: 160, child: _popupDataCell(data['remarks'] ?? '-')),
+                                      SizedBox(width: 120, child: _buildStatusChipPopup(data['status'] ?? 'Unknown')),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _popupHeaderCell(String text, {TextAlign textAlign = TextAlign.start}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF475569),
+          fontSize: 13,
+        ),
+        textAlign: textAlign,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _popupDataCell(String text, {TextAlign textAlign = TextAlign.start}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF1E293B),
+        ),
+        textAlign: textAlign,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _buildStatusChipPopup(String status) {
+    Color bgColor, textColor;
+    final lower = status.toLowerCase();
+    if (lower == 'not started') {
+      bgColor = const Color(0xFFFFF9DB);
+      textColor = const Color(0xFF854D0E);
+    } else if (lower == 'running' || lower == 'in progress') {
+      bgColor = const Color(0xFFDBEAFE);
+      textColor = const Color(0xFF1E40AF);
+    } else if (lower == 'completed') {
+      bgColor = const Color(0xFFDCFCE7);
+      textColor = const Color(0xFF166534);
+    } else {
+      bgColor = const Color(0xFFE2E8F0);
+      textColor = const Color(0xFF334155);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -227,6 +409,25 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
           _buildDetailedViewCard(),
           const SizedBox(height: 24),
           _buildTableContainer(snapshot),
+          const SizedBox(height: 16),
+          // 👇 Tombol [Detail] untuk popup landscape seluruh tabel
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: snapshot.hasData && snapshot.data != null
+                  ? () => _showFullTableLandscapePopup(snapshot.data!)
+                  : null,
+              icon: const Icon(Icons.visibility, size: 18),
+              label: const Text("Detail View"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3B82F6),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -302,7 +503,8 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const WorkableBondingDetailPage()),
+                  builder: (context) => const WorkableBondingDetailPage(),
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -408,9 +610,13 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
                   ],
                 ),
               ),
-              Screenshot(
-                controller: _screenshotController,
-                child: _buildTableContent(snapshot),
+              // Force light mode for screenshot
+              Theme(
+                data: ThemeData.light(),
+                child: Screenshot(
+                  controller: _screenshotController,
+                  child: _buildTableContent(snapshot),
+                ),
               ),
             ],
           ),
@@ -448,7 +654,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
         Expanded(flex: 3, child: _headerCell('Ship To')),
         Expanded(flex: 2, child: _headerCell('SKU')),
         Expanded(flex: 1, child: _headerCell('Order Qty', textAlign: TextAlign.end)),
-        Expanded(flex: 1, child: _headerCell('Qty Produksi', textAlign: TextAlign.end)), // 👈 BARU
+        Expanded(flex: 1, child: _headerCell('Progress', textAlign: TextAlign.end)),
         Expanded(flex: 1, child: _headerCell('Remain', textAlign: TextAlign.end)),
         Expanded(flex: 2, child: _headerCell('Remarks')),
         Expanded(flex: 2, child: _headerCell('Status')),
@@ -488,7 +694,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
                 textAlign: TextAlign.end,
               ),
             ),
-            Expanded( // 👈 BARU: Qty Produksi (progress)
+            Expanded(
               flex: 1,
               child: _dataCell(
                 numberFormat.format(item['progress'] ?? 0),
@@ -586,7 +792,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
             Expanded(flex: 3, child: _skeletonCell()),
             Expanded(flex: 2, child: _skeletonCell()),
             Expanded(flex: 1, child: _skeletonCell()),
-            Expanded(flex: 1, child: _skeletonCell()), // 👈 untuk Qty Produksi
+            Expanded(flex: 1, child: _skeletonCell()),
             Expanded(flex: 1, child: _skeletonCell()),
             Expanded(flex: 2, child: _skeletonCell()),
             Expanded(flex: 2, child: _skeletonCell()),
