@@ -1,7 +1,7 @@
 // lib/screens/home_pages/home/home_page_content.dart
 import 'package:flutter/material.dart';
 import 'package:zinus_production/screens/home_pages/workable/bonding/workable_bonding_page.dart';
-import 'package:zinus_production/screens/home_pages/more/more_home_page.dart'; 
+import 'package:zinus_production/screens/home_pages/more/more_home_screen.dart';
 
 class HomePageContent extends StatelessWidget {
   const HomePageContent({super.key});
@@ -88,7 +88,7 @@ class HomePageContent extends StatelessWidget {
             _buildQuickAccessItem(
               context,
               "Packing Foam",
-              Icons.inventory_2_outlined,
+              Icons.inventory_2_rounded,
               Colors.green,
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -117,7 +117,7 @@ class HomePageContent extends StatelessWidget {
             _buildQuickAccessItem(
               context,
               "Packing Foam",
-              Icons.inventory_2_outlined,
+              Icons.inventory_2_rounded,
               Colors.green,
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -156,8 +156,7 @@ class HomePageContent extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  // FIX: Menghapus const dan menggunakan nama kelas yang benar dari file yang diimpor
-                  MaterialPageRoute(builder: (context) => const MoreHomeScreen()), 
+                  MaterialPageRoute(builder: (context) => const MoreHomeScreen()),
                 );
               },
             ),
@@ -271,11 +270,7 @@ class HomePageContent extends StatelessWidget {
   // Helper: Grid Item (mirip DANA)
   Widget _buildQuickAccessItem(BuildContext context, String label, IconData icon, Color color, {VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: onTap ?? () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Buka $label')),
-        );
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
