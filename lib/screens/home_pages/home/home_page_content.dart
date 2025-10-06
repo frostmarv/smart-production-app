@@ -1,7 +1,7 @@
 // lib/screens/home_pages/home/home_page_content.dart
 import 'package:flutter/material.dart';
 import 'package:zinus_production/screens/home_pages/workable/bonding/workable_bonding_page.dart';
-import 'package:zinus_production/screens/home_pages/more/more_home_screen.dart';
+import 'package:zinus_production/screens/home_pages/more/more_home_page.dart';
 
 class HomePageContent extends StatelessWidget {
   const HomePageContent({super.key});
