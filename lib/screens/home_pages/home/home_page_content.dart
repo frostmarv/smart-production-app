@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:zinus_production/screens/home_pages/workable/bonding/workable_bonding_page.dart';
 import 'package:zinus_production/screens/home_pages/more/more_home_screen.dart';
-import 'package:zinus_production/screens/departments/bonding/bonding_home_screen.dart';
 
 class HomePageContent extends StatelessWidget {
   const HomePageContent({super.key});
@@ -143,9 +142,8 @@ class HomePageContent extends StatelessWidget {
               Icons.factory_rounded,
               Colors.blue,
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const BondingHomeScreen()),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Bonding - Halaman belum siap')),
                 );
               },
             ),
