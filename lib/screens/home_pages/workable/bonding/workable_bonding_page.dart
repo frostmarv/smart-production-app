@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:zinus_production/repositories/workable/workable_bonding_repository.dart';
+import 'package:zinus_production/services/permission_service.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -64,9 +65,11 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   }
 
   Future<void> _downloadImage() async {
-    if (Platform.isAndroid) {
-      final status = await Permission.storage.request();
-      if (!status.isGranted) {
+    // Check dan request permission jika belum diberikan
+    final hasPermission = await PermissionService.hasStoragePermission();
+    if (!hasPermission) {
+      final granted = await PermissionService.requestStoragePermission();
+      if (!granted) {
         _showMessage('Izin penyimpanan dibutuhkan untuk menyimpan gambar.');
         return;
       }

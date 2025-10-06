@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Permission Descriptions -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aplikasi membutuhkan akses ke galeri untuk menyimpan screenshot laporan produksi</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Aplikasi membutuhkan akses untuk menyimpan screenshot ke galeri Anda</string>
 </dict>
 </plist>

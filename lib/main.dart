@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 // --- Import services ---
 import 'services/environment_service.dart';
+import 'services/permission_service.dart';
 // --- Import screen utama ---
 import 'screens/home_pages/home_screen.dart';
 
@@ -15,6 +16,10 @@ void main() async {
   
   // Inisialisasi environment service dengan metode yang benar
   await EnvironmentService.init();
+  
+  // Request permissions saat app pertama kali dibuka
+  // Popup permission akan muncul di sini
+  await PermissionService.requestInitialPermissions();
   
   // --- Jalankan aplikasi ---
   runApp(const MyApp());
