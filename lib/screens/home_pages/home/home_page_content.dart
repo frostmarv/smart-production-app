@@ -315,25 +315,26 @@ class HomePageContent extends StatelessWidget {
 
   // Helper: Grid Layout (Wrap 4 kolom)
   Widget _buildGrid(BuildContext context, List<Widget> items) {
-    // Get screen width to calculate item width
-    double screenWidth = MediaQuery.of(context).size.width;
-    // Padding on the SingleChildScrollView is 20 on each side
-    double containerWidth = screenWidth - 40; 
-    // Spacing between items
-    double spacing = 12;
-    // Calculate width for each item (4 items per row)
-    double itemWidth = (containerWidth - (spacing * 3)) / 4;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate width based on available space
+        double containerWidth = constraints.maxWidth;
+        // Spacing between items
+        double spacing = 12;
+        // Calculate width for each item (4 items per row)
+        double itemWidth = (containerWidth - (spacing * 3)) / 4;
 
-    return Wrap(
-      spacing: spacing,
-      runSpacing: 12,
-      children: List.generate(items.length, (index) {
-        return SizedBox(
-          key: ValueKey('grid_item_$index'),
-          width: itemWidth,
-          child: items[index],
+        return Wrap(
+          spacing: spacing,
+          runSpacing: 12,
+          children: items.map((item) {
+            return SizedBox(
+              width: itemWidth,
+              child: item,
+            );
+          }).toList(),
         );
-      }),
+      },
     );
   }
 }
