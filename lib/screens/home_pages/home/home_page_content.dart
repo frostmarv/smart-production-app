@@ -269,6 +269,7 @@ class HomePageContent extends StatelessWidget {
   // Helper: Grid Item (mirip DANA)
   Widget _buildQuickAccessItem(BuildContext context, String label, IconData icon, Color color, {VoidCallback? onTap}) {
     return GestureDetector(
+      key: ValueKey('quick_access_$label'),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -326,12 +327,13 @@ class HomePageContent extends StatelessWidget {
     return Wrap(
       spacing: spacing,
       runSpacing: 12,
-      children: items.map((item) {
+      children: List.generate(items.length, (index) {
         return SizedBox(
+          key: ValueKey('grid_item_$index'),
           width: itemWidth,
-          child: item,
+          child: items[index],
         );
-      }).toList(),
+      }),
     );
   }
 }

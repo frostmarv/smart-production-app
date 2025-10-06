@@ -126,6 +126,7 @@ class MoreHomeScreen extends StatelessWidget {
     Widget Function()? route,
   }) {
     return GestureDetector(
+      key: ValueKey('department_$name'),
       onTap: () {
         if (route != null) {
           Navigator.push(
