@@ -313,7 +313,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
 
     setState(() => _isSubmitting = true);
     try {
-      final response = await BondingRepository.submitFormInput(formData);
+      await BondingRepository.submitFormInput(formData);
       if (mounted) {
         _showSuccess('Data berhasil disimpan!');
         // Opsional: reset form atau navigasi

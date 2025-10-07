@@ -15,7 +15,6 @@ class _CuttingHomeScreenState extends State<CuttingHomeScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -39,14 +38,6 @@ class _CuttingHomeScreenState extends State<CuttingHomeScreen>
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
-    ));
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
     ));
 
     _animationController.forward();

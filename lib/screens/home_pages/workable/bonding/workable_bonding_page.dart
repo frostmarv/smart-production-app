@@ -7,7 +7,6 @@ import 'package:zinus_production/repositories/workable/workable_bonding_reposito
 import 'package:zinus_production/services/permission_service.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'workable_bonding_detail.dart';
 
