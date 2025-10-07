@@ -53,7 +53,7 @@ class PermissionService {
   }
 
   /// Show permission settings jika user menolak permission
-  static Future<void> openAppSettings() async {
+  static Future<void> openSettings() async {
     await openAppSettings();
   }
 }
