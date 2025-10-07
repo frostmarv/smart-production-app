@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:zinus_production/repositories/master_data/master_data_repository.dart';
+import 'package:zinus_production/repositories/departments/bonding_repository.dart'; // <-- Tambahkan ini
 
 class InputSummaryBondingScreen extends StatefulWidget {
   const InputSummaryBondingScreen({super.key});
@@ -25,7 +26,11 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
   String? _selectedGroup = 'A';
   String? _selectedTime;
   String? _selectedMachine;
-  String? _selectedOperator;
+  // String? _selectedOperator; // ❌ Dihapus
+
+  // === KASHIFT & ADMIN (baru) ===
+  String? _kashift;
+  String? _admin;
 
   // === MASTER DATA (ENTRY TUNGGAL) ===
   String? _selectedCustomer;
@@ -36,7 +41,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
   // === AUTO-FILLED DATA ===
   int? _quantityOrder;
   int? _remainQuantity;
-  int? _progress;
+  // int? _progress; // ❌ Dihapus
   String? _week;
 
   // === LOADING STATES ===
@@ -45,6 +50,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
   bool _loadingCustomerPos = false;
   bool _loadingSkus = false;
   bool _loadingData = false;
+  bool _isSubmitting = false; // ✅ Untuk loading saat submit
 
   // === DATA LIST ===
   List<dynamic> _customers = [];
@@ -57,6 +63,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
     super.initState();
     _timestamp = DateTime.now();
     _selectedTime = _getTimeSlots('1').first;
+    _updateKashiftAdmin(_selectedGroup); // Set awal
     _loadCustomers();
 
     _animationController = AnimationController(
@@ -68,6 +75,20 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
       curve: Curves.easeInOut,
     );
     _animationController.forward();
+  }
+
+  // ✅ Helper untuk update Kashift & Admin berdasarkan Group
+  void _updateKashiftAdmin(String? group) {
+    if (group == 'A') {
+      _kashift = 'Noval';
+      _admin = 'Aline';
+    } else if (group == 'B') {
+      _kashift = 'Abizar';
+      _admin = 'Puji';
+    } else {
+      _kashift = null;
+      _admin = null;
+    }
   }
 
   @override
@@ -99,7 +120,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
     }
   }
 
-  // === API CALLS ===
+  // === API CALLS (tidak berubah kecuali penyesuaian minor) ===
   Future<void> _loadCustomers() async {
     setState(() => _loadingCustomers = true);
     try {
@@ -132,7 +153,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
           _selectedSku = null;
           _quantityOrder = null;
           _remainQuantity = null;
-          _progress = null;
+          // _progress = null; // Dihapus
           _week = null;
           _loadingPoNumbers = false;
         });
@@ -157,7 +178,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
           _selectedSku = null;
           _quantityOrder = null;
           _remainQuantity = null;
-          _progress = null;
+          // _progress = null;
           _week = null;
           _loadingCustomerPos = false;
         });
@@ -180,7 +201,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
           _selectedSku = null;
           _quantityOrder = null;
           _remainQuantity = null;
-          _progress = null;
+          // _progress = null;
           _week = null;
           _loadingSkus = false;
         });
@@ -196,7 +217,6 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
   Future<void> _loadAllData(String customerPo, String sku) async {
     setState(() => _loadingData = true);
     try {
-      // 1. Ambil QUANTITY ORDER dari qty-plans
       final qtyPlansData = await _repo.getQtyPlans(customerPo, sku);
       int? qtyOrder;
       List<dynamic>? sCodesList;
@@ -205,11 +225,9 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
         final firstPlan = qtyPlansData[0] as Map<String, dynamic>;
         final qtyValue = firstPlan['value'];
         qtyOrder = qtyValue is int ? qtyValue : int.tryParse(qtyValue.toString());
-
         sCodesList = firstPlan['s_codes'] as List<dynamic>?;
       }
 
-      // 2. Ambil WEEK dari weeks
       final weeksData = await _repo.getWeeks(customerPo, sku);
       String? weekValue;
       if (weeksData.isNotEmpty) {
@@ -217,9 +235,8 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
         weekValue = firstWeek['value']?.toString();
       }
 
-      // 3. Ambil REMAIN QUANTITY (butuh sCode)
       int? remainQty;
-      int? progressValue;
+      // int? progressValue; // Tidak dipakai
 
       if (sCodesList != null && sCodesList.isNotEmpty) {
         final firstSCode = sCodesList[0] as Map<String, dynamic>;
@@ -234,10 +251,6 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
           qtyOrder ??= remainData['quantityOrder'] is int
               ? remainData['quantityOrder'] as int
               : int.tryParse(remainData['quantityOrder'].toString());
-
-          progressValue = remainData['progress'] is int
-              ? remainData['progress'] as int
-              : int.tryParse(remainData['progress'].toString());
         }
       }
 
@@ -245,7 +258,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
         setState(() {
           _quantityOrder = qtyOrder;
           _remainQuantity = remainQty;
-          _progress = progressValue;
+          // _progress = progressValue;
           _week = weekValue;
           _loadingData = false;
         });
@@ -254,6 +267,65 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
       if (mounted) {
         setState(() => _loadingData = false);
         _showError('Gagal memuat data master');
+      }
+    }
+  }
+
+  // ✅ Submit ke backend
+  Future<void> _submitForm() async {
+    if (_formKey.currentState?.validate() != true) return;
+
+    // Pastikan semua data wajib terisi
+    if (_selectedCustomer == null ||
+        _selectedPoNumber == null ||
+        _selectedCustomerPo == null ||
+        _selectedSku == null ||
+        _selectedShift == null ||
+        _selectedGroup == null ||
+        _selectedTime == null ||
+        _selectedMachine == null ||
+        _kashift == null ||
+        _admin == null) {
+      _showError('Lengkapi semua field yang diperlukan');
+      return;
+    }
+
+    final qtyProduksi = int.tryParse(_qtyProduksiController.text);
+    if (qtyProduksi == null || qtyProduksi <= 0) {
+      _showError('Quantity Produksi tidak valid');
+      return;
+    }
+
+    final formData = {
+      'timestamp': _timestamp.toIso8601String(),
+      'shift': _selectedShift,
+      'group': _selectedGroup,
+      'time_slot': _selectedTime,
+      'machine': _selectedMachine,
+      'kashift': _kashift,
+      'admin': _admin,
+      'customer': _selectedCustomer,
+      'po_number': _selectedPoNumber,
+      'customer_po': _selectedCustomerPo,
+      'sku': _selectedSku,
+      'quantity_produksi': qtyProduksi,
+    };
+
+    setState(() => _isSubmitting = true);
+    try {
+      final response = await BondingRepository.submitFormInput(formData);
+      if (mounted) {
+        _showSuccess('Data berhasil disimpan!');
+        // Opsional: reset form atau navigasi
+        // _qtyProduksiController.clear();
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError('Gagal menyimpan data. Silakan coba lagi.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
       }
     }
   }
@@ -296,7 +368,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
     );
   }
 
-  // === PREMIUM BUILDERS ===
+  // === PREMIUM BUILDERS (tidak berubah kecuali penyesuaian minor) ===
   Widget _buildSectionHeader(String title, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(top: 24, bottom: 16),
@@ -752,7 +824,12 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
                     {'value': 'A', 'label': 'A'},
                     {'value': 'B', 'label': 'B'},
                   ],
-                  onChanged: (val) => setState(() => _selectedGroup = val),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedGroup = val;
+                      _updateKashiftAdmin(val); // ✅ Update Kashift & Admin
+                    });
+                  },
                   icon: Icons.group_rounded,
                 ),
 
@@ -782,17 +859,21 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
                   icon: Icons.precision_manufacturing_rounded,
                 ),
 
-                // Operator
-                _buildLabeledDropdown(
-                  label: 'Operator',
-                  value: _selectedOperator,
-                  options: const [
-                    {'value': 'Andi', 'label': 'Andi'},
-                    {'value': 'Budi', 'label': 'Budi'},
-                  ],
-                  onChanged: (val) => setState(() => _selectedOperator = val),
-                  icon: Icons.person_rounded,
-                ),
+                // === KASHIFT & ADMIN (baru) ===
+                if (_kashift != null && _admin != null) ...[
+                  _buildLabeledDisplay(
+                    label: 'Kashift',
+                    value: _kashift,
+                    icon: Icons.supervisor_account_rounded,
+                    accentColor: const Color(0xFF7C3AED),
+                  ),
+                  _buildLabeledDisplay(
+                    label: 'Admin',
+                    value: _admin,
+                    icon: Icons.admin_panel_settings_rounded,
+                    accentColor: const Color(0xFFEC4899),
+                  ),
+                ],
 
                 // === DIVIDER ===
                 Container(
@@ -878,14 +959,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
                   accentColor: const Color(0xFF059669),
                 ),
 
-                // Progress
-                _buildLabeledDisplay(
-                  label: 'Progress',
-                  value: _progress?.toString() ?? '0',
-                  loading: _loadingData,
-                  icon: Icons.trending_up_rounded,
-                  accentColor: const Color(0xFFEAB308),
-                ),
+                // ❌ Progress DIHAPUS
 
                 // Quantity Produksi
                 _buildLabeledTextField(
@@ -925,47 +999,39 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
                 const SizedBox(height: 32),
 
                 // Submit Button
-                Container(
+                SizedBox(
                   width: double.infinity,
                   height: 58,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF3B82F6).withOpacity(0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      if (_formKey.currentState?.validate() == true) {
-                        // TODO: Submit logic
-                        _showSuccess('Data berhasil disimpan!');
-                      }
-                    },
-                    icon: const Icon(Icons.save_rounded, size: 20),
-                    label: const Text(
-                      'Simpan Data',
-                      style: TextStyle(
+                    onPressed: _isSubmitting ? null : _submitForm, // ✅ Nonaktifkan saat loading
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.save_rounded, size: 20),
+                    label: Text(
+                      _isSubmitting ? 'Menyimpan...' : 'Simpan Data',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
+                      backgroundColor: _isSubmitting
+                          ? const Color(0xFF1E40AF).withOpacity(0.7)
+                          : const Color(0xFF1E40AF),
                       foregroundColor: Colors.white,
-                      shadowColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
+                      elevation: 4,
+                      shadowColor: const Color(0xFF3B82F6).withOpacity(0.4),
                     ),
                   ),
                 ),
