@@ -3,70 +3,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:zinus_production/repositories/workable/workable_bonding_repository.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-
-// Dummy data sesuai contoh respons JSON
-const List<Map<String, dynamic>> _mockApiResponse = [
-  {
-    "customerPO": "0879611930",
-    "shipToName": "AMAZON DI",
-    "sku": "AZ-CMM-1000F",
-    "week": 1,
-    "quantityOrder": 117,
-    "Layer 1": 117,
-    "Layer 2": 117,
-    "Layer 3": 0,
-    "Layer 4": 0,
-    "Hole": 0,
-    "workable": 117,
-    "bonding": 117,
-    "remain": 0,
-    "status": "Completed",
-    "remarks": "Bonding completed"
-  },
-  {
-    "customerPO": "0879611931",
-    "shipToName": "WALMART US",
-    "sku": "WM-DELUXE-200",
-    "week": 2,
-    "quantityOrder": 200,
-    "Layer 1": 200,
-    "Layer 2": 150,
-    "Layer 3": 100,
-    "Layer 4": 0,
-    "Hole": 50,
-    "workable": 200,
-    "bonding": 150,
-    "remain": 50,
-    "status": "Running",
-    "remarks": "Layer 3 in progress"
-  },
-  {
-    "customerPO": "0879611932",
-    "shipToName": "TARGET STORE",
-    "sku": "TG-PREMIUM-50",
-    "week": 3,
-    "quantityOrder": 50,
-    "Layer 1": 0,
-    "Layer 2": 0,
-    "Layer 3": 0,
-    "Layer 4": 0,
-    "Hole": 0,
-    "workable": 0,
-    "bonding": 0,
-    "remain": 50,
-    "status": "Not Started",
-    "remarks": "Awaiting materials"
-  },
-];
-
-// Simulasi repository dengan Future.delayed
-Future<List<dynamic>> _mockGetWorkableBondingDetail() async {
-  await Future.delayed(const Duration(milliseconds: 800));
-  return List<dynamic>.from(_mockApiResponse);
-}
 
 class WorkableBondingDetailPage extends StatefulWidget {
   const WorkableBondingDetailPage({super.key});
@@ -100,7 +40,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
 
   void _fetchData() {
     // ✅ Tanpa setState — langsung assign future
-    _workableBondingDetailFuture = _mockGetWorkableBondingDetail();
+    _workableBondingDetailFuture = WorkableBondingRepository.getWorkableBondingDetail();
   }
 
   Future<void> _captureAndShare() async {
@@ -111,16 +51,13 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
         return;
       }
 
-      await Share.shareXFiles(
-        [
-          XFile.fromData(
-            image,
-            mimeType: 'image/png',
-            name: 'workable_detail_summary.png',
-          ),
-        ],
-        text: 'Ini adalah detail produksi Workable Bonding',
-      );
+      await Share.shareXFiles([
+        XFile.fromData(
+          image,
+          mimeType: 'image/png',
+          name: 'workable_detail_summary.png',
+        ),
+      ], text: 'Ini adalah detail produksi Workable Bonding');
       _showMessage('Gambar telah dibagikan!');
     } catch (e) {
       _showMessage('Gagal membagikan gambar: $e');
@@ -132,7 +69,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
       Uint8List? image = await _screenshotController.capture();
       if (image == null) return;
 
-      // ✅ Tidak perlu permission — simpan ke direktori privat
+      // ✅ Tidak perlu permission — simpan ke ApplicationDocumentsDirectory
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/workable_bonding_detail.png');
       await file.writeAsBytes(image);
@@ -199,7 +136,8 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header
+                        // ✅ Header sesuai contoh JSON:
+                        // customerPO, shipToName, sku, week, quantityOrder, Layer 1-4, Hole, remain, remarks, status
                         Container(
                           color: const Color(0xFFF1F5F9),
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -333,7 +271,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
     );
   }
 
-  // ✅ Widget status chip reusable — dipakai di tabel & popup
+  // ✅ Reusable status chip — dipakai di tabel & popup
   Widget _buildStatusChip(String status) {
     Color bgColor, textColor;
     final lower = status.toLowerCase();
@@ -422,7 +360,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
                 child: Row(
                   children: [
                     Icon(Icons.share_outlined, color: Color(0xFF6366F1)),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text("Bagikan Gambar"),
                   ],
                 ),
@@ -432,7 +370,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
                 child: Row(
                   children: [
                     Icon(Icons.download_outlined, color: Color(0xFF8B5CF6)),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text("Download Gambar"),
                   ],
                 ),
@@ -442,7 +380,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
                 child: Row(
                   children: [
                     Icon(Icons.refresh_rounded, color: Colors.green),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text("Refresh Data"),
                   ],
                 ),
@@ -601,7 +539,10 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
 
   Widget _buildTableContainer(AsyncSnapshot<List<dynamic>> snapshot) {
     return FadeTransition(
-      opacity: _animationController,
+      opacity: CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutCubic,
+      ),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -931,4 +872,4 @@ class _SkeletonRow extends StatelessWidget {
       ),
     );
   }
-}
+}  
