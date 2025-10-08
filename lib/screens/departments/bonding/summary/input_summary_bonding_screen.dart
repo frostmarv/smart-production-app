@@ -313,15 +313,22 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
 
     setState(() => _isSubmitting = true);
     try {
-      await BondingRepository.submitFormInput(formData);
+      final response = await BondingRepository.submitFormInput(formData);
       if (mounted) {
         _showSuccess('Data berhasil disimpan!');
-        // Opsional: reset form atau navigasi
-        // _qtyProduksiController.clear();
+        // Reset form after successful submit
+        _qtyProduksiController.clear();
+        // Optionally navigate back or refresh
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        _showError('Gagal menyimpan data. Silakan coba lagi.');
+        // Show detailed error message
+        final errorMessage = e.toString().contains('Exception:')
+            ? e.toString().replaceAll('Exception:', '').trim()
+            : 'Gagal menyimpan data: ${e.toString()}';
+        _showError(errorMessage);
+        print('❌ Submit error: $e');
       }
     } finally {
       if (mounted) {

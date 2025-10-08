@@ -61,7 +61,25 @@ class HttpClient {
 
   static void _throwIfNotOk(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('HTTP ${response.statusCode}: ${response.reasonPhrase}');
+      String errorMessage = 'HTTP ${response.statusCode}: ${response.reasonPhrase}';
+      
+      // Try to parse error message from response body
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map && body.containsKey('message')) {
+          errorMessage = body['message'].toString();
+        } else if (body is Map && body.containsKey('error')) {
+          errorMessage = body['error'].toString();
+        }
+      } catch (_) {
+        // If parsing fails, use default error message
+        if (response.body.isNotEmpty) {
+          errorMessage = '${response.statusCode}: ${response.body}';
+        }
+      }
+      
+      print('❌ HTTP Error: $errorMessage');
+      throw Exception(errorMessage);
     }
   }
 }

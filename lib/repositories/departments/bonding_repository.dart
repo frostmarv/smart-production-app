@@ -5,8 +5,16 @@ class BondingRepository {
   /// Submit form input bonding (khusus UI input)
   /// Endpoint: POST /api/bonding/summary/form-input
   static Future<Map<String, dynamic>> submitFormInput(Map<String, dynamic> formData) async {
-    print('📤 Submitting bonding form: $formData');
-    return await HttpClient.post('/api/bonding/summary/form-input', formData);
+    print('📤 Submitting bonding form to /api/bonding/summary/form-input');
+    print('📦 Form data: $formData');
+    try {
+      final response = await HttpClient.post('/api/bonding/summary/form-input', formData);
+      print('✅ Submit successful: $response');
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      print('❌ Submit failed: $e');
+      rethrow;
+    }
   }
 
   /// GET all bonding summaries
