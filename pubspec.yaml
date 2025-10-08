@@ -29,6 +29,9 @@ dependencies:
   
   # Google Fonts
   google_fonts: ^6.0.0
+  
+  # Video player for splash screen
+  video_player: ^2.8.2
 
 dev_dependencies:
   flutter_test:
@@ -42,7 +45,6 @@ flutter:
 
   # Daftar assets (gambar, file, dll)
   assets:
-    - assets/zinus_logo.jpeg
     - assets/
 
 # Flutter Launcher Icons Configuration

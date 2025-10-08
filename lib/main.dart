@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'services/environment_service.dart';
 import 'services/permission_service.dart';
 // --- Import screen utama ---
-import 'screens/home_pages/home_screen.dart';
+import 'screens/splash_screen.dart';
 
 /// Fungsi utama aplikasi.
 /// 
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
