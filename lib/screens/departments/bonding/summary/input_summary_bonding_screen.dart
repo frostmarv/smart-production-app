@@ -308,6 +308,9 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
       'po_number': _selectedPoNumber,
       'customer_po': _selectedCustomerPo,
       'sku': _selectedSku,
+      'week': _week,
+      'quantity_order': _quantityOrder,
+      'remain_quantity': _remainQuantity,
       'quantity_produksi': qtyProduksi,
     };
 
