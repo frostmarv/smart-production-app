@@ -33,7 +33,8 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
   String? _admin;
 
   // === MASTER DATA (ENTRY TUNGGAL) ===
-  String? _selectedCustomer;
+  String? _selectedCustomer; // Stores VALUE (ID) for API calls
+  String? _selectedCustomerLabel; // Stores LABEL for backend submission
   String? _selectedPoNumber;
   String? _selectedCustomerPo;
   String? _selectedSku;
@@ -277,6 +278,7 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
 
     // Pastikan semua data wajib terisi
     if (_selectedCustomer == null ||
+        _selectedCustomerLabel == null ||
         _selectedPoNumber == null ||
         _selectedCustomerPo == null ||
         _selectedSku == null ||
@@ -285,7 +287,8 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
         _selectedTime == null ||
         _selectedMachine == null ||
         _kashift == null ||
-        _admin == null) {
+        _admin == null ||
+        _week == null) {
       _showError('Lengkapi semua field yang diperlukan');
       return;
     }
@@ -304,13 +307,11 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
       'machine': _selectedMachine,
       'kashift': _kashift,
       'admin': _admin,
-      'customer': _selectedCustomer,
+      'customer': _selectedCustomerLabel, // ✅ Send LABEL, not VALUE
       'po_number': _selectedPoNumber,
       'customer_po': _selectedCustomerPo,
       'sku': _selectedSku,
       'week': _week,
-      'quantity_order': _quantityOrder,
-      'remain_quantity': _remainQuantity,
       'quantity_produksi': qtyProduksi,
     };
 
@@ -909,7 +910,14 @@ class _InputSummaryBondingScreenState extends State<InputSummaryBondingScreen>
                   value: _selectedCustomer,
                   options: List<Map<String, dynamic>>.from(_customers),
                   onChanged: (val) {
-                    setState(() => _selectedCustomer = val);
+                    setState(() {
+                      _selectedCustomer = val;
+                      // Store label for backend submission
+                      _selectedCustomerLabel = _customers.firstWhere(
+                        (c) => c['value'].toString() == val,
+                        orElse: () => {'label': val},
+                      )['label']?.toString();
+                    });
                     if (val != null) _loadPoNumbers(val);
                   },
                   showLoading: _loadingCustomers,
