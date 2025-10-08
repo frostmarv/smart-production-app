@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:zinus_production/repositories/workable/workable_bonding_repository.dart';
-import 'package:zinus_production/services/permission_service.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -22,6 +21,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   late Future<List<dynamic>> _workableBondingFuture;
   late AnimationController _animationController;
   final ScreenshotController _screenshotController = ScreenshotController();
+  ConnectionState _prevConnectionState = ConnectionState.none;
 
   @override
   void initState() {
@@ -40,15 +40,17 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   }
 
   void _fetchData() {
-    setState(() {
-      _workableBondingFuture = WorkableBondingRepository.getWorkableBonding();
-    });
+    // ✅ Tanpa setState — langsung assign future
+    _workableBondingFuture = WorkableBondingRepository.getWorkableBonding();
   }
 
   Future<void> _captureAndShare() async {
     try {
       Uint8List? image = await _screenshotController.capture();
-      if (image == null) return;
+      if (image == null) {
+        _showMessage('Gagal mengambil tangkapan layar.');
+        return;
+      }
 
       await Share.shareXFiles([
         XFile.fromData(
@@ -64,20 +66,11 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   }
 
   Future<void> _downloadImage() async {
-    // Check dan request permission jika belum diberikan
-    final hasPermission = await PermissionService.hasStoragePermission();
-    if (!hasPermission) {
-      final granted = await PermissionService.requestStoragePermission();
-      if (!granted) {
-        _showMessage('Izin penyimpanan dibutuhkan untuk menyimpan gambar.');
-        return;
-      }
-    }
-
     try {
       Uint8List? image = await _screenshotController.capture();
       if (image == null) return;
 
+      // ✅ Tidak perlu permission — simpan ke ApplicationDocumentsDirectory
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/workable_bonding_summary.png');
       await file.writeAsBytes(image);
@@ -107,117 +100,115 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
     showDialog(
       context: context,
       builder: (context) {
-        return Theme(
-          data: ThemeData.light(), // ✅ Force light mode
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: EdgeInsets.zero,
-            child: Container(
-              color: Colors.white,
-              child: Column(
-                children: [
-                  // Header with close button
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF3B82F6),
+        return Dialog(
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF3B82F6),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Workable Bonding - Full Table",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Workable Bonding - Full Table",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: InteractiveViewer(
-                      boundaryMargin: const EdgeInsets.all(20),
-                      minScale: 0.5,
-                      maxScale: 4.0,
-                      constrained: false,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        // ✅ Header sesuai respons JSON API:
+                        // week, shipToName, sku, quantityOrder, workable, bonding, remain, remarks, status
+                        Container(
+                          color: const Color(0xFFF1F5F9),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
                             children: [
-                              // Header
-                              Container(
-                                color: const Color(0xFFF1F5F9),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                child: Row(
-                                  children: [
-                                    SizedBox(width: 60, child: _popupHeaderCell('Week')),
-                                    SizedBox(width: 180, child: _popupHeaderCell('Ship To')),
-                                    SizedBox(width: 140, child: _popupHeaderCell('SKU')),
-                                    SizedBox(width: 100, child: _popupHeaderCell('Order Qty', textAlign: TextAlign.end)),
-                                    SizedBox(width: 100, child: _popupHeaderCell('Progress', textAlign: TextAlign.end)),
-                                    SizedBox(width: 100, child: _popupHeaderCell('Remain', textAlign: TextAlign.end)),
-                                    SizedBox(width: 160, child: _popupHeaderCell('Remarks')),
-                                    SizedBox(width: 120, child: _popupHeaderCell('Status')),
-                                  ],
-                                ),
-                              ),
-                              // Rows
-                              ...items.map((item) {
-                                final data = item as Map<String, dynamic>;
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: const BoxDecoration(
-                                    border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      SizedBox(width: 60, child: _popupDataCell(data['week'].toString())),
-                                      SizedBox(width: 180, child: _popupDataCell(data['shipToName'] ?? '-')),
-                                      SizedBox(width: 140, child: _popupDataCell(data['sku'] ?? '-')),
-                                      SizedBox(
-                                        width: 100,
-                                        child: _popupDataCell(
-                                          numberFormat.format(data['quantityOrder'] ?? 0),
-                                          textAlign: TextAlign.end,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 100,
-                                        child: _popupDataCell(
-                                          numberFormat.format(data['progress'] ?? 0),
-                                          textAlign: TextAlign.end,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 100,
-                                        child: _popupDataCell(
-                                          numberFormat.format(data['remain'] ?? 0),
-                                          textAlign: TextAlign.end,
-                                        ),
-                                      ),
-                                      SizedBox(width: 160, child: _popupDataCell(data['remarks'] ?? '-')),
-                                      SizedBox(width: 120, child: _buildStatusChipPopup(data['status'] ?? 'Unknown')),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
+                              SizedBox(width: 60, child: _popupHeaderCell('Week')),
+                              SizedBox(width: 180, child: _popupHeaderCell('Ship To')),
+                              SizedBox(width: 140, child: _popupHeaderCell('SKU')),
+                              SizedBox(width: 100, child: _popupHeaderCell('Order Qty', textAlign: TextAlign.end)),
+                              SizedBox(width: 100, child: _popupHeaderCell('Workable', textAlign: TextAlign.end)),
+                              SizedBox(width: 100, child: _popupHeaderCell('Bonding', textAlign: TextAlign.end)),
+                              SizedBox(width: 100, child: _popupHeaderCell('Remain', textAlign: TextAlign.end)),
+                              SizedBox(width: 160, child: _popupHeaderCell('Remarks')),
+                              SizedBox(width: 120, child: _popupHeaderCell('Status')),
                             ],
                           ),
                         ),
-                      ),
+                        // Rows
+                        ...items.map((item) {
+                          final data = item as Map<String, dynamic>;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: const BoxDecoration(
+                              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(width: 60, child: _popupDataCell(data['week'].toString())),
+                                SizedBox(width: 180, child: _popupDataCell(data['shipToName'] ?? '-')),
+                                SizedBox(width: 140, child: _popupDataCell(data['sku'] ?? '-')),
+                                SizedBox(
+                                  width: 100,
+                                  child: _popupDataCell(
+                                    numberFormat.format(data['quantityOrder'] ?? 0),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 100,
+                                  child: _popupDataCell(
+                                    numberFormat.format(data['workable'] ?? 0),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 100,
+                                  child: _popupDataCell(
+                                    numberFormat.format(data['bonding'] ?? 0),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 100,
+                                  child: _popupDataCell(
+                                    numberFormat.format(data['remain'] ?? 0),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                                SizedBox(width: 160, child: _popupDataCell(data['remarks'] ?? '-')),
+                                SizedBox(width: 120, child: _buildStatusChip(data['status'] ?? 'Unknown')),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -255,7 +246,8 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
     );
   }
 
-  Widget _buildStatusChipPopup(String status) {
+  // ✅ Reusable status chip — dipakai di tabel & popup
+  Widget _buildStatusChip(String status) {
     Color bgColor, textColor;
     final lower = status.toLowerCase();
     if (lower == 'not started') {
@@ -379,12 +371,15 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
       body: FutureBuilder<List<dynamic>>(
         future: _workableBondingFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting ||
-              !snapshot.hasData) {
-            _animationController.value = 0;
-          } else {
+          // ✅ Kontrol animasi hanya saat state berubah
+          if (_prevConnectionState == ConnectionState.waiting &&
+              (snapshot.hasData || snapshot.hasError)) {
             _animationController.forward();
+          } else if (snapshot.connectionState == ConnectionState.waiting &&
+                     _prevConnectionState != ConnectionState.waiting) {
+            _animationController.stop();
           }
+          _prevConnectionState = snapshot.connectionState;
           return _buildDashboardView(snapshot);
         },
       ),
@@ -412,7 +407,6 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
           const SizedBox(height: 24),
           _buildTableContainer(snapshot),
           const SizedBox(height: 16),
-          // 👇 Tombol [Detail] untuk popup landscape seluruh tabel
           Center(
             child: ElevatedButton.icon(
               onPressed: snapshot.hasData && snapshot.data != null
@@ -612,7 +606,6 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
                   ],
                 ),
               ),
-              // Force light mode for screenshot
               Theme(
                 data: ThemeData.light(),
                 child: Screenshot(
@@ -656,7 +649,8 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
         Expanded(flex: 3, child: _headerCell('Ship To')),
         Expanded(flex: 2, child: _headerCell('SKU')),
         Expanded(flex: 1, child: _headerCell('Order Qty', textAlign: TextAlign.end)),
-        Expanded(flex: 1, child: _headerCell('Progress', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('Workable', textAlign: TextAlign.end)),
+        Expanded(flex: 1, child: _headerCell('Bonding', textAlign: TextAlign.end)),
         Expanded(flex: 1, child: _headerCell('Remain', textAlign: TextAlign.end)),
         Expanded(flex: 2, child: _headerCell('Remarks')),
         Expanded(flex: 2, child: _headerCell('Status')),
@@ -699,7 +693,14 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
             Expanded(
               flex: 1,
               child: _dataCell(
-                numberFormat.format(item['progress'] ?? 0),
+                numberFormat.format(item['workable'] ?? 0),
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: _dataCell(
+                numberFormat.format(item['bonding'] ?? 0),
                 textAlign: TextAlign.end,
               ),
             ),
@@ -735,56 +736,6 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
     );
   }
 
-  Widget _buildStatusChip(String status) {
-    Color bgColor, textColor, borderColor;
-    final lower = status.toLowerCase();
-    if (lower == 'not started') {
-      bgColor = const Color(0xFFFFF9DB);
-      textColor = const Color(0xFF854D0E);
-      borderColor = const Color(0xFFFEDF89);
-    } else if (lower == 'running' || lower == 'in progress') {
-      bgColor = const Color(0xFFDBEAFE);
-      textColor = const Color(0xFF1E40AF);
-      borderColor = const Color(0xFF93C5FD);
-    } else if (lower == 'completed') {
-      bgColor = const Color(0xFFDCFCE7);
-      textColor = const Color(0xFF166534);
-      borderColor = const Color(0xFF86EFAC);
-    } else {
-      bgColor = const Color(0xFFE2E8F0);
-      textColor = const Color(0xFF334155);
-      borderColor = const Color(0xFFCBD5E1);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: bgColor,
-          border: Border.all(color: borderColor.withOpacity(0.4), width: 1),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: bgColor.withOpacity(0.3),
-              blurRadius: 2,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Text(
-          status,
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-
   Widget _buildSkeletonRow() {
     return Column(
       children: [
@@ -793,6 +744,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
             Expanded(flex: 1, child: _skeletonCell()),
             Expanded(flex: 3, child: _skeletonCell()),
             Expanded(flex: 2, child: _skeletonCell()),
+            Expanded(flex: 1, child: _skeletonCell()),
             Expanded(flex: 1, child: _skeletonCell()),
             Expanded(flex: 1, child: _skeletonCell()),
             Expanded(flex: 1, child: _skeletonCell()),
@@ -806,14 +758,11 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
   }
 
   Widget _skeletonCell() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-      child: Container(
-        height: 16,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(6),
-        ),
+    return Container(
+      height: 16,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(6),
       ),
     );
   }
