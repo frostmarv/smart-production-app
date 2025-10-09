@@ -138,7 +138,7 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ✅ Header sesuai respons JSON API:
-                        // week, shipToName, sku, quantityOrder, workable, bonding, remain, remarks, status
+                        // week, shipToName, sku, quantityOrder, workable, bonding, ng, replacement, ng_active, remain, remarks, status
                         Container(
                           color: const Color(0xFFF1F5F9),
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -150,6 +150,9 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
                               SizedBox(width: 100, child: _popupHeaderCell('Order Qty', textAlign: TextAlign.end)),
                               SizedBox(width: 100, child: _popupHeaderCell('Workable', textAlign: TextAlign.end)),
                               SizedBox(width: 100, child: _popupHeaderCell('Bonding', textAlign: TextAlign.end)),
+                              SizedBox(width: 80, child: _popupHeaderCell('NG', textAlign: TextAlign.end)),
+                              SizedBox(width: 100, child: _popupHeaderCell('Replace', textAlign: TextAlign.end)),
+                              SizedBox(width: 100, child: _popupHeaderCell('NG Active', textAlign: TextAlign.end)),
                               SizedBox(width: 100, child: _popupHeaderCell('Remain', textAlign: TextAlign.end)),
                               SizedBox(width: 160, child: _popupHeaderCell('Remarks')),
                               SizedBox(width: 120, child: _popupHeaderCell('Status')),
@@ -187,6 +190,27 @@ class _WorkableBondingPageState extends State<WorkableBondingPage>
                                   width: 100,
                                   child: _popupDataCell(
                                     numberFormat.format(data['bonding'] ?? 0),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 80,
+                                  child: _popupDataCell(
+                                    numberFormat.format(data['ng'] ?? 0),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 100,
+                                  child: _popupDataCell(
+                                    numberFormat.format(data['replacement'] ?? 0),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 100,
+                                  child: _popupDataCell(
+                                    numberFormat.format(data['ng_active'] ?? 0),
                                     textAlign: TextAlign.end,
                                   ),
                                 ),

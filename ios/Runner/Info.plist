@@ -46,8 +46,13 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<!-- Permission Descriptions -->
+	<!-- Camera permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>Aplikasi membutuhkan akses kamera untuk mengambil foto reject/NG produksi</string>
+	
+	<!-- Photo Library permissions -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Aplikasi membutuhkan akses ke galeri untuk menyimpan screenshot laporan produksi</string>
+	<string>Aplikasi membutuhkan akses ke galeri untuk memilih foto reject/NG dan menyimpan screenshot laporan produksi</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Aplikasi membutuhkan akses untuk menyimpan screenshot ke galeri Anda</string>
 </dict>
