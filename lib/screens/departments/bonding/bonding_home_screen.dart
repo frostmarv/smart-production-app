@@ -1,9 +1,8 @@
 // lib/screens/departments/bonding/bonding_home_screen.dart
 import 'package:flutter/material.dart';
 // --- Import screen-screen spesifik untuk Bonding ---
-import 'summary/input_summary_bonding_screen.dart'; // Sesuaikan path jika berbeda
-// import 'losstime/input_losstime_screen.dart'; // Nanti kalau ada
-// import 'output/input_output_screen.dart'; // Nanti kalau ada
+import 'summary/input_summary_bonding_screen.dart';
+import 'reject/input_reject_bonding_screen.dart'; // ✅ Tambahkan ini
 
 /// Home screen untuk departemen Bonding.
 /// Menampilkan daftar sub-process yang dapat diakses.
@@ -214,11 +213,11 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                       ),
                       const SizedBox(height: 24),
 
-                      // Vertical Menu Items
+                      // === Summary Report (Aktif) ===
                       _buildPremiumMenuItem(
                         context: context,
                         title: "Summary Report",
-                        subtitle: "View production summary and analytics",
+                        subtitle: "Input and view production summary data",
                         icon: Icons.analytics_rounded,
                         gradient: const LinearGradient(
                           colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
@@ -232,71 +231,46 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      // --- Menu Webbing Management DIHAPUS karena tidak relevan untuk Bonding ---
-                      // _buildPremiumMenuItem(
-                      //   context: context,
-                      //   title: "Webbing Management",
-                      //   subtitle: "Input and manage webbing production data",
-                      //   icon: Icons.web_asset_rounded,
-                      //   gradient: const LinearGradient(
-                      //     colors: [Color(0xFF10B981), Color(0xFF059669)],
-                      //   ),
-                      //   onTap: () {
-                      //     Navigator.push(
-                      //       context,
-                      //       _createRoute(const WebbingMenuScreen()),
-                      //     );
-                      //   },
-                      // ),
-                      // const SizedBox(height: 16),
-
+                      // === Reject (NG) Report (Aktif) ===
                       _buildPremiumMenuItem(
                         context: context,
+                        title: "Reject (NG) Report",
+                        subtitle: "Input and track Not Good / Reject items",
+                        icon: Icons.report_gmailerrorred_rounded,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFDC2626), Color(0xFFBE123C)],
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            _createRoute(const InputRejectBondingScreen()),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // === SISA MENU: LOCKED / COMING SOON ===
+
+                      _buildComingSoonMenuItem(
                         title: "Losstime Analysis",
                         subtitle: "Track and analyze production downtime",
                         icon: Icons.timer_off_rounded,
                         gradient: const LinearGradient(
                           colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
                         ),
-                        onTap: () {
-                          // Navigator.push(
-                          //   context,
-                          //   _createRoute(const InputLosstimeScreen()),
-                          // );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("🚧 Losstime Analysis coming soon!"),
-                              backgroundColor: Color(0xFFF59E0B),
-                            ),
-                          );
-                        },
                       ),
                       const SizedBox(height: 16),
 
-                      _buildPremiumMenuItem(
-                        context: context,
+                      _buildComingSoonMenuItem(
                         title: "Output Tracking",
                         subtitle: "Monitor production output and targets",
                         icon: Icons.trending_up_rounded,
                         gradient: const LinearGradient(
                           colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                         ),
-                        onTap: () {
-                          // Navigator.push(
-                          //   context,
-                          //   _createRoute(const InputOutputScreen()),
-                          // );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("🚧 Output Tracking coming soon!"),
-                              backgroundColor: Color(0xFFF59E0B),
-                            ),
-                          );
-                        },
                       ),
                       const SizedBox(height: 16),
 
-                      // Coming Soon Items
                       _buildComingSoonMenuItem(
                         title: "Quality Control",
                         subtitle: "Manage quality checks and standards",
@@ -466,6 +440,7 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
     );
   }
 
+  // ✅ Updated: Semua menu non-Summary/NG jadi "Coming Soon"
   Widget _buildComingSoonMenuItem({
     required String title,
     required String subtitle,
@@ -597,7 +572,6 @@ class _BackgroundPatternPainter extends CustomPainter {
 
     const spacing = 40.0;
 
-    // Draw grid pattern
     for (double x = 0; x < size.width; x += spacing) {
       canvas.drawLine(
         Offset(x, 0),
@@ -614,7 +588,6 @@ class _BackgroundPatternPainter extends CustomPainter {
       );
     }
 
-    // Draw circles
     final circlePaint = Paint()
       ..color = Colors.white.withOpacity(0.05)
       ..style = PaintingStyle.fill;
