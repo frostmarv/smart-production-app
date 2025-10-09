@@ -1,5 +1,7 @@
 // lib/screens/departments/bonding/reject/input_reject_bonding_screen.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:zinus_production/repositories/master_data/master_data_repository.dart';
 import 'package:zinus_production/repositories/departments/bonding_repository.dart';
@@ -26,7 +28,6 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
   String? _selectedShift = '1';
   String? _selectedGroup = 'A';
   String? _selectedTime;
-  String? _selectedMachine;
 
   // === KASHIFT & ADMIN ===
   String? _kashift;
@@ -36,17 +37,19 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
   String? _selectedCustomer;
   String? _selectedCustomerLabel;
   String? _selectedPoNumber;
-  String? _selectedCustomerPo;
   String? _selectedSku;
 
-  // === S.CODE (baru) ===
+  // === S.CODE ===
   String? _selectedSCode;
   String? _sCodeDescription;
+
+  // === IMAGE UPLOAD ===
+  final ImagePicker _picker = ImagePicker();
+  List<XFile> _selectedImages = [];
 
   // === LOADING STATES ===
   bool _loadingCustomers = false;
   bool _loadingPoNumbers = false;
-  bool _loadingCustomerPos = false;
   bool _loadingSkus = false;
   bool _loadingSCodes = false;
   bool _isSubmitting = false;
@@ -54,7 +57,6 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
   // === DATA LIST ===
   List<dynamic> _customers = [];
   List<dynamic> _poNumbers = [];
-  List<dynamic> _customerPos = [];
   List<dynamic> _skus = [];
   List<dynamic> _sCodes = [];
 
@@ -143,11 +145,9 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
       if (mounted) {
         setState(() {
           _poNumbers = data;
-          _customerPos = [];
           _skus = [];
           _sCodes = [];
           _selectedPoNumber = null;
-          _selectedCustomerPo = null;
           _selectedSku = null;
           _selectedSCode = null;
           _sCodeDescription = null;
@@ -162,34 +162,10 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
     }
   }
 
-  Future<void> _loadCustomerPos(String poNumber) async {
-    setState(() => _loadingCustomerPos = true);
-    try {
-      final data = await _repo.getCustomerPOs(poNumber);
-      if (mounted) {
-        setState(() {
-          _customerPos = data;
-          _skus = [];
-          _sCodes = [];
-          _selectedCustomerPo = null;
-          _selectedSku = null;
-          _selectedSCode = null;
-          _sCodeDescription = null;
-          _loadingCustomerPos = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loadingCustomerPos = false);
-        _showError('Gagal memuat Customer POs');
-      }
-    }
-  }
-
-  Future<void> _loadSkus(String customerPo) async {
+  Future<void> _loadSkus(String poNumber) async {
     setState(() => _loadingSkus = true);
     try {
-      final data = await _repo.getSkus(customerPo);
+      final data = await _repo.getSkus(poNumber);
       if (mounted) {
         setState(() {
           _skus = data;
@@ -208,10 +184,10 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
     }
   }
 
-  Future<void> _loadSCodes(String customerPo, String sku) async {
+  Future<void> _loadSCodes(String poNumber, String sku) async {
     setState(() => _loadingSCodes = true);
     try {
-      final qtyPlansData = await _repo.getQtyPlans(customerPo, sku);
+      final qtyPlansData = await _repo.getQtyPlans(poNumber, sku);
       List<dynamic> sCodeList = [];
 
       if (qtyPlansData.isNotEmpty) {
@@ -245,19 +221,40 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
     }
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picked = await _picker.pickMultiImage(
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
+      if (picked != null && picked.isNotEmpty) {
+        setState(() {
+          _selectedImages.addAll(picked);
+        });
+      }
+    } catch (e) {
+      _showError('Gagal memilih gambar');
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
+  }
+
   Future<void> _submitForm() async {
     if (_formKey.currentState?.validate() != true) return;
 
     if (_selectedCustomer == null ||
         _selectedCustomerLabel == null ||
         _selectedPoNumber == null ||
-        _selectedCustomerPo == null ||
         _selectedSku == null ||
         _selectedSCode == null ||
         _selectedShift == null ||
         _selectedGroup == null ||
         _selectedTime == null ||
-        _selectedMachine == null ||
         _kashift == null ||
         _admin == null) {
       _showError('Lengkapi semua field yang diperlukan');
@@ -276,29 +273,47 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
       return;
     }
 
+    // 1️⃣ Kirim form input dulu (tanpa gambar)
     final formData = {
       'timestamp': _timestamp.toIso8601String(),
       'shift': _selectedShift,
       'group': _selectedGroup,
       'time_slot': _selectedTime,
-      'machine': _selectedMachine,
       'kashift': _kashift,
       'admin': _admin,
       'customer': _selectedCustomerLabel,
       'po_number': _selectedPoNumber,
-      'customer_po': _selectedCustomerPo,
       'sku': _selectedSku,
       's_code': _selectedSCode,
       'ng_quantity': ngQty,
       'reason': reason,
+      // ❌ images: base64 dihapus
     };
 
     setState(() => _isSubmitting = true);
     try {
+      // Kirim form input ke backend
       final response = await BondingRepository.submitRejectFormInput(formData);
+      final bondingRejectId = response['data']['id']; // Ambil ID dari response
+
+      if (bondingRejectId == null) {
+        throw Exception('Gagal mendapatkan ID dari backend');
+      }
+
+      // 2️⃣ Upload gambar ke Google Drive (jika ada)
+      if (_selectedImages.isNotEmpty) {
+        final imageFiles = _selectedImages.map((x) => File(x.path)).toList();
+        final imageResult = await BondingRepository.uploadRejectImages(
+          bondingRejectId,
+          imageFiles,
+        );
+
+        print('✅ Upload gambar sukses: ${imageResult['data']['files'].length} files');
+      }
+
       if (mounted) {
-        _showSuccess('Data NG berhasil disimpan!');
-        Navigator.of(context).pop();
+        _showSuccess('Data NG dan gambar berhasil disimpan!');
+        Navigator.of(context).pop(); // Kembali ke halaman sebelumnya
       }
     } catch (e) {
       if (mounted) {
@@ -349,6 +364,117 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 3),
       ),
+    );
+  }
+
+  Widget _buildImagePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            'Foto NG (Opsional, maks. 5)',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E293B),
+              fontSize: 15,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            ..._selectedImages.asMap().entries.map((entry) {
+              final index = entry.key;
+              final image = entry.value;
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(image.path),
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: GestureDetector(
+                      onTap: () => _removeImage(index),
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+            if (_selectedImages.length < 5)
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) {
+                      return SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.camera),
+                              title: const Text('Ambil Foto'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _pickImage(ImageSource.camera);
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.image),
+                              title: const Text('Pilih dari Galeri'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _pickImage(ImageSource.gallery);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
+                  ),
+                  child: const Icon(
+                    Icons.add_a_photo,
+                    color: Color(0xFF94A3B8),
+                    size: 32,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 
@@ -783,7 +909,7 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
                 ),
                 const SizedBox(height: 20),
 
-                // Shift, Group, Time, Machine
+                // Shift, Group, Time
                 _buildLabeledDropdown(
                   label: 'Shift',
                   value: _selectedShift,
@@ -823,19 +949,6 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
                   onChanged: (val) => setState(() => _selectedTime = val),
                   icon: Icons.timer_outlined,
                 ),
-                _buildLabeledDropdown(
-                  label: 'Machine',
-                  value: _selectedMachine,
-                  options: List.generate(
-                    8,
-                    (i) => {
-                      'value': 'PUR ${i + 1}',
-                      'label': 'PUR ${i + 1}',
-                    },
-                  ),
-                  onChanged: (val) => setState(() => _selectedMachine = val),
-                  icon: Icons.precision_manufacturing_rounded,
-                ),
 
                 // Kashift & Admin
                 if (_kashift != null && _admin != null) ...[
@@ -853,7 +966,6 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
                   ),
                 ],
 
-                // ✅ Perbaikan: Hapus `const` agar tidak error
                 Divider(
                   height: 32,
                   thickness: 1,
@@ -887,32 +999,21 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
                   enabled: _selectedCustomer != null,
                   onChanged: (val) {
                     setState(() => _selectedPoNumber = val);
-                    if (val != null) _loadCustomerPos(val);
+                    if (val != null) _loadSkus(val);
                   },
                   showLoading: _loadingPoNumbers,
                   icon: Icons.receipt_long_rounded,
                 ),
-                _buildLabeledDropdown(
-                  label: 'Customer PO',
-                  value: _selectedCustomerPo,
-                  options: List<Map<String, dynamic>>.from(_customerPos),
-                  enabled: _selectedPoNumber != null,
-                  onChanged: (val) {
-                    setState(() => _selectedCustomerPo = val);
-                    if (val != null) _loadSkus(val);
-                  },
-                  showLoading: _loadingCustomerPos,
-                  icon: Icons.assignment_rounded,
-                ),
+
                 _buildLabeledDropdown(
                   label: 'SKU',
                   value: _selectedSku,
                   options: List<Map<String, dynamic>>.from(_skus),
-                  enabled: _selectedCustomerPo != null,
+                  enabled: _selectedPoNumber != null,
                   onChanged: (val) {
                     setState(() => _selectedSku = val);
-                    if (val != null && _selectedCustomerPo != null) {
-                      _loadSCodes(_selectedCustomerPo!, val);
+                    if (val != null && _selectedPoNumber != null) {
+                      _loadSCodes(_selectedPoNumber!, val);
                     }
                   },
                   showLoading: _loadingSkus,
@@ -964,6 +1065,9 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
                   },
                   icon: Icons.report_gmailerrorred_rounded,
                 ),
+
+                // ✅ Upload Gambar
+                _buildImagePicker(),
 
                 const SizedBox(height: 32),
 

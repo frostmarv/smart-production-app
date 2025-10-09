@@ -1,8 +1,8 @@
-// lib/screens/departments/bonding/bonding_home_screen.dart
 import 'package:flutter/material.dart';
+
 // --- Import screen-screen spesifik untuk Bonding ---
 import 'summary/input_summary_bonding_screen.dart';
-import 'reject/input_reject_bonding_screen.dart'; // ✅ Tambahkan ini
+import 'reject/input_reject_bonding_screen.dart';
 
 /// Home screen untuk departemen Bonding.
 /// Menampilkan daftar sub-process yang dapat diakses.
@@ -23,7 +23,7 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
@@ -32,11 +32,11 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
     ));
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.5),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
@@ -57,33 +57,31 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          // Premium App Bar
+          // === Premium App Bar with Glass Effect ===
           SliverAppBar(
-            expandedHeight: 200.0,
+            expandedHeight: 220.0,
             floating: false,
             pinned: true,
             elevation: 0,
             backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
             leading: Container(
-              margin: const EdgeInsets.all(8),
+              margin: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_rounded,
-                  color: Color(0xFF1E293B),
-                  size: 20,
-                ),
+              child: BackButton(
+                color: const Color(0xFF1E293B),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -91,26 +89,38 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
               background: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                     colors: [
-                      Color(0xFF8B5CF6), // Purple
-                      Color(0xFF7C3AED), // Darker Purple
-                      Color(0xFF6D28D9), // Even Darker Purple
+                      Color(0xFF6D28D9), // Deep Purple
+                      Color(0xFF7C3AED), // Medium Purple
+                      Color(0xFF8B5CF6), // Light Purple
                     ],
+                    stops: [0.0, 0.5, 1.0],
                   ),
                 ),
                 child: Stack(
                   children: [
-                    // Background Pattern
+                    // Glassmorphism Pattern
                     Positioned.fill(
-                      child: CustomPaint(
-                        painter: _BackgroundPatternPainter(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white.withOpacity(0.1),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
                       ),
                     ),
+                    // Floating Elements
+                    _buildFloatingElements(),
                     // Content
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 80, 24, 32),
+                      padding: const EdgeInsets.fromLTRB(28, 100, 28, 36),
                       child: FadeTransition(
                         opacity: _fadeAnimation,
                         child: Column(
@@ -118,33 +128,35 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(16),
+                                color: Colors.white.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                backdropFilter: const ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                               ),
                               child: const Icon(
-                                Icons.join_full_rounded, // Icon bonding
+                                Icons.join_full_rounded,
                                 color: Colors.white,
-                                size: 32,
+                                size: 40,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 20),
                             const Text(
                               "Bonding Department",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -1,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -1.2,
                               ),
                             ),
                             Text(
                               "Production Management System",
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.9),
-                                fontSize: 16,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w500,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ],
@@ -157,7 +169,7 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
             ),
           ),
 
-          // Menu Content
+          // === Main Content with Premium Cards ===
           SliverToBoxAdapter(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -168,59 +180,25 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Quick Stats
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard(
-                              "Active Lines",
-                              "3",
-                              Icons.play_circle_outline_rounded,
-                              const Color(0xFF10B981),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildStatCard(
-                              "Efficiency",
-                              "89%",
-                              Icons.trending_up_rounded,
-                              const Color(0xFF3B82F6),
-                            ),
-                          ),
-                        ],
-                      ),
+                      // === Quick Stats Cards ===
+                      _buildStatsSection(),
                       const SizedBox(height: 32),
 
-                      // Section Title
-                      const Text(
-                        "Production Modules",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1E293B),
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "Select a module to manage production data",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF64748B),
-                          fontWeight: FontWeight.w500,
-                        ),
+                      // === Section Header ===
+                      _buildSectionHeader(
+                        title: "Production Modules",
+                        subtitle: "Select a module to manage production data",
                       ),
                       const SizedBox(height: 24),
 
-                      // === Summary Report (Aktif) ===
-                      _buildPremiumMenuItem(
+                      // === Active Modules (Summary & Reject) ===
+                      _buildActiveModuleCard(
                         context: context,
                         title: "Summary Report",
                         subtitle: "Input and view production summary data",
                         icon: Icons.analytics_rounded,
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+                          colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
                         ),
                         onTap: () {
                           Navigator.push(
@@ -231,14 +209,13 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      // === Reject (NG) Report (Aktif) ===
-                      _buildPremiumMenuItem(
+                      _buildActiveModuleCard(
                         context: context,
                         title: "Reject (NG) Report",
                         subtitle: "Input and track Not Good / Reject items",
                         icon: Icons.report_gmailerrorred_rounded,
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFDC2626), Color(0xFFBE123C)],
+                          colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
                         ),
                         onTap: () {
                           Navigator.push(
@@ -247,11 +224,16 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                           );
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 32),
 
-                      // === SISA MENU: LOCKED / COMING SOON ===
+                      // === Coming Soon Section ===
+                      _buildSectionHeader(
+                        title: "Coming Soon",
+                        subtitle: "Additional features will be available soon",
+                      ),
+                      const SizedBox(height: 24),
 
-                      _buildComingSoonMenuItem(
+                      _buildComingSoonCard(
                         title: "Losstime Analysis",
                         subtitle: "Track and analyze production downtime",
                         icon: Icons.timer_off_rounded,
@@ -261,7 +243,7 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      _buildComingSoonMenuItem(
+                      _buildComingSoonCard(
                         title: "Output Tracking",
                         subtitle: "Monitor production output and targets",
                         icon: Icons.trending_up_rounded,
@@ -271,7 +253,7 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      _buildComingSoonMenuItem(
+                      _buildComingSoonCard(
                         title: "Quality Control",
                         subtitle: "Manage quality checks and standards",
                         icon: Icons.verified_rounded,
@@ -280,7 +262,7 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
@@ -292,319 +274,42 @@ class _BondingHomeScreenState extends State<BondingHomeScreen>
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1E293B),
-              letterSpacing: -1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF64748B),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPremiumMenuItem({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Gradient gradient,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 25,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
+  Widget _buildFloatingElements() {
+    return Stack(
+      children: [
+        // Floating circles
+        Positioned(
+          top: 80,
+          right: -30,
           child: Container(
-            padding: const EdgeInsets.all(24),
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: gradient,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: gradient.colors.first.withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1E293B),
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF64748B),
-                          fontWeight: FontWeight.w500,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B).withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: Color(0xFF1E293B),
-                    size: 16,
-                  ),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+              ),
+              borderRadius: BorderRadius.circular(60),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  // ✅ Updated: Semua menu non-Summary/NG jadi "Coming Soon"
-  Widget _buildComingSoonMenuItem({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Gradient gradient,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
+        Positioned(
+          bottom: 100,
+          left: -40,
+          child: Container(
+            width: 160,
+            height: 160,
             decoration: BoxDecoration(
-              color: const Color(0xFF94A3B8).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF94A3B8),
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF94A3B8),
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        "Soon",
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFF59E0B),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF94A3B8),
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF94A3B8).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.lock_outline_rounded,
-              color: Color(0xFF94A3B8),
-              size: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Route _createRoute(Widget page) {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => page,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(1.0, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.easeInOutCubic;
-
-        var tween = Tween(begin: begin, end: end).chain(
-          CurveTween(curve: curve),
-        );
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
-      },
-      transitionDuration: const Duration(milliseconds: 400),
-    );
-  }
-}
-
-/// Custom painter untuk background pattern
-class _BackgroundPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    const spacing = 40.0;
-
-    for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        paint,
-      );
-    }
-
-    for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        paint,
-      );
-    }
-
-    final circlePaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(
-      Offset(size.width * 0.8, size.height * 0.3),
-      25,
-      circlePaint,
-    );
-
-    canvas.drawCircle(
-      Offset(size.width * 0.2, size.height * 0.7),
-      15,
-      circlePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEC4899), Color(0xFFDB2777)],
+              ),
+              borderRadius: BorderRadius.circular(80),
+              boxShadow: [
+                BoxShadow(
+                  color: const 
