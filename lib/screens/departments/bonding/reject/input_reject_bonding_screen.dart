@@ -60,6 +60,8 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
   List<dynamic> _skus = [];
   List<dynamic> _sCodes = [];
 
+  static const int _maxImages = 5;
+
   @override
   void initState() {
     super.initState();
@@ -221,20 +223,27 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
     }
   }
 
+  /// ✅ DIPERBAIKI: Bisa ambil banyak foto dari kamera atau galeri, maksimal 5 total
   Future<void> _pickImage(ImageSource source) async {
+    if (_selectedImages.length >= _maxImages) {
+      _showError('Maksimal $_maxImages foto');
+      return;
+    }
+
     try {
-      final picked = await _picker.pickMultiImage(
+      final picked = await _picker.pickImage(
+        source: source,
         maxWidth: 800,
         maxHeight: 800,
         imageQuality: 80,
       );
-      if (picked != null && picked.isNotEmpty) {
+      if (picked != null) {
         setState(() {
-          _selectedImages.addAll(picked);
+          _selectedImages.add(picked);
         });
       }
     } catch (e) {
-      _showError('Gagal memilih gambar');
+      _showError('Gagal memilih gambar: ${e.toString()}');
     }
   }
 
@@ -273,7 +282,7 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
       return;
     }
 
-    // 1️⃣ Kirim form input dulu (tanpa gambar)
+    // 1️⃣ Kirim form input dulu (tanpa gambar) — ✅ TAMBAHKAN description
     final formData = {
       'timestamp': _timestamp.toIso8601String(),
       'shift': _selectedShift,
@@ -285,35 +294,33 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
       'po_number': _selectedPoNumber,
       'sku': _selectedSku,
       's_code': _selectedSCode,
+      'description': _sCodeDescription ?? '', // ✅ INI YANG DITAMBAHKAN
       'ng_quantity': ngQty,
       'reason': reason,
-      // ❌ images: base64 dihapus
     };
 
     setState(() => _isSubmitting = true);
     try {
-      // Kirim form input ke backend
       final response = await BondingRepository.submitRejectFormInput(formData);
-      final bondingRejectId = response['data']['id']; // Ambil ID dari response
+      final bondingRejectId = response['data']['id'];
 
       if (bondingRejectId == null) {
         throw Exception('Gagal mendapatkan ID dari backend');
       }
 
-      // 2️⃣ Upload gambar ke Google Drive (jika ada)
+      // 2️⃣ Upload gambar (jika ada)
       if (_selectedImages.isNotEmpty) {
         final imageFiles = _selectedImages.map((x) => File(x.path)).toList();
         final imageResult = await BondingRepository.uploadRejectImages(
           bondingRejectId,
           imageFiles,
         );
-
         print('✅ Upload gambar sukses: ${imageResult['data']['files'].length} files');
       }
 
       if (mounted) {
         _showSuccess('Data NG dan gambar berhasil disimpan!');
-        Navigator.of(context).pop(); // Kembali ke halaman sebelumnya
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
@@ -374,7 +381,7 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Text(
-            'Foto NG (Opsional, maks. 5)',
+            'Foto NG (Opsional, maks. $_maxImages)',
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               color: Color(0xFF1E293B),
@@ -424,7 +431,7 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
                 ],
               );
             }).toList(),
-            if (_selectedImages.length < 5)
+            if (_selectedImages.length < _maxImages)
               GestureDetector(
                 onTap: () {
                   showModalBottomSheet(
@@ -1066,7 +1073,7 @@ class _InputRejectBondingScreenState extends State<InputRejectBondingScreen>
                   icon: Icons.report_gmailerrorred_rounded,
                 ),
 
-                // ✅ Upload Gambar
+                // ✅ Upload Gambar — sekarang bebas ambil dari kamera/galeri, maks 5 total
                 _buildImagePicker(),
 
                 const SizedBox(height: 32),
