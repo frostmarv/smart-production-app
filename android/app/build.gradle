@@ -59,7 +59,7 @@ android {
             shrinkResources false
         }
         debug {
-            applicationIdSuffix ".debug"
+            // Removed applicationIdSuffix to match google-services.json package name
             versionNameSuffix "-debug"
             minifyEnabled false
         }
