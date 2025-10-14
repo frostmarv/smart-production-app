@@ -2,8 +2,6 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    // Apply google-services plugin at the end
-    id 'com.google.gms.google-services'
 }
 
 def localProperties = new Properties()
@@ -26,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.zinus.production.smart_production_app"
-    compileSdk 34
+    compileSdk 36
     ndkVersion "27.0.12077973"
 
     compileOptions {
@@ -82,3 +80,6 @@ dependencies {
     // When using the BoM, you don't specify versions in Firebase library dependencies
     implementation("com.google.firebase:firebase-messaging")
 }
+
+// Apply google-services plugin at the very end to avoid task dependency issues
+apply plugin: 'com.google.gms.google-services'
