@@ -78,7 +78,7 @@ dependencies {
     implementation "com.google.firebase:firebase-messaging"
 
     // ✅ Desugaring lib agar kompatibel dengan Java 8+ API
-    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"
 }
 
 // ✅ Apply plugin Google Services (Firebase)
