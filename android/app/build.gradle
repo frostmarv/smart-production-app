@@ -81,5 +81,13 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging")
 }
 
-// Apply google-services plugin at the very end to avoid task dependency issues
+// Apply google-services plugin at the very end
 apply plugin: 'com.google.gms.google-services'
+
+// Fix for extractDeepLinksDebug task dependency issue
+// This ensures processDebugGoogleServices completes before extractDeepLinksDebug
+tasks.configureEach { task ->
+    if (task.name == 'extractDeepLinksDebug' || task.name == 'extractDeepLinksRelease') {
+        task.mustRunAfter tasks.matching { it.name.startsWith('process') && it.name.contains('GoogleServices') }
+    }
+}
