@@ -1,0 +1,32 @@
+# Uncomment this line to define a global platform for your project
+platform :ios, '12.0'
+
+# CocoaPods analytics sends network stats seamlessly to Google Analytics.
+# This means sending information about plugins developed by the Flutter team,
+# dependencies used in your app, and the number of Flutter builds.
+# For more information, see our privacy policy:
+# https://github.com/flutter/flutter/wiki/Privacy-Policy
+ENV['FLUTTER_FRAMEWORK_DIR'] = '/Users/youruser/development/flutter'
+ENV['FLUTTER_TARGET'] = 'ios'
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  # Add the Firebase pod for Google Analytics
+  pod 'Firebase/Analytics'
+
+  # Add the pod for Firebase Core
+  pod 'Firebase/Core'
+
+  # Add the pod for Firebase Messaging
+  pod 'Firebase/Messaging'
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+  end
+end

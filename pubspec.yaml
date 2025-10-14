@@ -1,0 +1,86 @@
+name: zinus_production
+description: "Aplikasi produksi digital dengan fitur offline & integrasi JDE"
+
+# Jangan publish ke pub.dev (karena internal)
+publish_to: 'none'
+
+# Versi aplikasi
+# Android: versionName = 1.0.0, versionCode = 1
+# iOS: CFBundleShortVersionString = 1.0.0, CFBundleVersion = 1
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # HTTP client (untuk kirim data ke backend)
+  http: ^1.2.2
+
+  # Format tanggal, waktu, angka
+  intl: ^0.19.0
+  screenshot: ^3.0.0
+  path_provider: ^2.1.1
+  permission_handler: ^11.0.1
+  share_plus: ^7.1.0
+  
+  # Image picker for camera and gallery
+  image_picker: ^1.0.7
+  
+  # Google Fonts
+  google_fonts: ^6.0.0
+  
+  # Video player for splash screen
+  video_player: ^2.8.2
+  shared_preferences: ^2.2.2
+  jwt_decoder: ^2.0.1
+  fluttertoast: ^8.2.4
+  firebase_core: ^4.2.0
+  firebase_messaging: ^16.0.3
+  flutter_local_notifications: ^19.4.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  # Aktifkan Material Design (termasuk ikon)
+  uses-material-design: true
+
+  # Daftar assets (gambar, file, dll)
+  assets:
+    - assets/
+
+# Flutter Launcher Icons Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/zinus_logo.jpeg"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/zinus_logo.jpeg"
+    background_color: "#ffffff"
+    theme_color: "#3B82F6"
+  windows:
+    generate: true
+    image_path: "assets/zinus_logo.jpeg"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/zinus_logo.jpeg"
+
+  # Custom fonts (opsional)
+  # fonts:
+  #   - family: Poppins
+  #   - fonts:
+  #       - asset: fonts/Poppins-Regular.ttf
+  #       - asset: fonts/Poppins-Medium.ttf
+  #         weight: 500
+  #       - asset: fonts/Poppins-Bold.ttf
+  #         weight: 700

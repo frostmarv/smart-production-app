@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "153560933849",
+    "project_id": "zinus-production-dff6e",
+    "storage_bucket": "zinus-production-dff6e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:153560933849:android:167777fbe725bf749325c8",
+        "android_client_info": {
+          "package_name": "com.zinus.production.smart_production_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBReo2Zfu4MXOp4MVI5f-C24KGywH1aDs8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,244 @@
+workflows:
+  # Android Build Workflow
+  android-workflow:
+    name: Android Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      android_signing:
+        - keystore_reference
+      groups:
+        - app_credentials
+      vars:
+        PACKAGE_NAME: "com.zinus.production.smart_production_app"
+        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
+      flutter: 3.24.5
+      java: 17
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Generate app icons
+        script: |
+          flutter pub run flutter_launcher_icons
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+        ignore_failure: true
+      - name: Build Release APK (Split per ABI)
+        script: |
+          flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=$API_BASE_URL
+      - name: Build Universal APK
+        script: |
+          flutter build apk --release --dart-define=API_BASE_URL=$API_BASE_URL
+      - name: Rename APK files
+        script: |
+          cd build/app/outputs/flutter-apk
+          VERSION=$(grep 'version:' ../../../../pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          BUILD=$(grep 'version:' ../../../../pubspec.yaml | awk '{print $2}' | cut -d'+' -f2)
+          
+          # Rename split APKs
+          [ -f app-armeabi-v7a-release.apk ] && mv app-armeabi-v7a-release.apk "zinus-production-v${VERSION}-armeabi-v7a.apk"
+          [ -f app-arm64-v8a-release.apk ] && mv app-arm64-v8a-release.apk "zinus-production-v${VERSION}-arm64-v8a.apk"
+          [ -f app-x86_64-release.apk ] && mv app-x86_64-release.apk "zinus-production-v${VERSION}-x86_64.apk"
+          
+          # Rename universal APK
+          [ -f app-release.apk ] && mv app-release.apk "zinus-production-v${VERSION}-universal.apk"
+          
+          ls -lh
+      # Uncomment below to build AAB for Play Store
+      # - name: Build App Bundle (AAB)
+      #   script: |
+      #     flutter build appbundle --release --dart-define=API_BASE_URL=$API_BASE_URL
+    artifacts:
+      - build/app/outputs/flutter-apk/zinus-production-*.apk
+      # Uncomment below to include AAB in artifacts
+      # - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/mapping/release/mapping.txt
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+      # Uncomment untuk publish ke Google Play
+      # google_play:
+      #   credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+      #   track: internal
+      #   submit_as_draft: true
+
+  # iOS Build Workflow
+  ios-workflow:
+    name: iOS Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.zinus.production.smartProductionApp
+      groups:
+        - app_credentials
+      vars:
+        BUNDLE_ID: "com.zinus.production.smartProductionApp"
+        XCODE_WORKSPACE: "Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
+      flutter: 3.24.5
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Install pods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Build ipa for distribution
+        script: |
+          flutter build ipa --release \
+            --dart-define=API_BASE_URL=$API_BASE_URL \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+      # Uncomment untuk publish ke App Store
+      # app_store_connect:
+      #   auth: integration
+      #   submit_to_testflight: true
+      #   beta_groups:
+      #     - Internal Testers
+      #   submit_to_app_store: false
+
+  # APK Only Build (for direct distribution)
+  android-apk-only:
+    name: Android APK Build
+    max_build_duration: 45
+    instance_type: mac_mini_m1
+    environment:
+      android_signing:
+        - keystore_reference
+      groups:
+        - app_credentials
+      vars:
+        PACKAGE_NAME: "com.zinus.production.smart_production_app"
+        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
+      flutter: 3.24.5
+      java: 17
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Generate app icons
+        script: |
+          flutter pub run flutter_launcher_icons
+      - name: Build Split APKs (per ABI)
+        script: |
+          flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=$API_BASE_URL
+      - name: Build Universal APK
+        script: |
+          flutter build apk --release --dart-define=API_BASE_URL=$API_BASE_URL
+      - name: Rename APK files
+        script: |
+          cd build/app/outputs/flutter-apk
+          VERSION=$(grep 'version:' ../../../../pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          BUILD=$(grep 'version:' ../../../../pubspec.yaml | awk '{print $2}' | cut -d'+' -f2)
+          
+          # Rename split APKs
+          [ -f app-armeabi-v7a-release.apk ] && mv app-armeabi-v7a-release.apk "zinus-production-v${VERSION}-armeabi-v7a.apk"
+          [ -f app-arm64-v8a-release.apk ] && mv app-arm64-v8a-release.apk "zinus-production-v${VERSION}-arm64-v8a.apk"
+          [ -f app-x86_64-release.apk ] && mv app-x86_64-release.apk "zinus-production-v${VERSION}-x86_64.apk"
+          
+          # Rename universal APK
+          [ -f app-release.apk ] && mv app-release.apk "zinus-production-v${VERSION}-universal.apk"
+          
+          ls -lh
+      # Uncomment below to build AAB for Play Store
+      # - name: Build App Bundle (AAB)
+      #   script: |
+      #     flutter build appbundle --release --dart-define=API_BASE_URL=$API_BASE_URL
+    artifacts:
+      - build/app/outputs/flutter-apk/zinus-production-*.apk
+      # Uncomment below to include AAB in artifacts
+      # - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/mapping/release/mapping.txt
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+
+  # Development Build (Debug)
+  dev-workflow:
+    name: Development Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      groups:
+        - app_credentials
+      vars:
+        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
+      flutter: 3.24.5
+      java: 17
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'develop'
+          include: true
+          source: true
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Generate app icons
+        script: |
+          flutter pub run flutter_launcher_icons
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+        ignore_failure: true
+      - name: Run tests
+        script: |
+          flutter test
+        ignore_failure: true
+      - name: Build debug APK
+        script: |
+          flutter build apk --debug --dart-define=API_BASE_URL=$API_BASE_URL
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: false
+          failure: true
