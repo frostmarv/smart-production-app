@@ -5,39 +5,34 @@ plugins {
 }
 
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
+def localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
+    localPropertiesFile.withReader("UTF-8") { reader ->
         localProperties.load(reader)
     }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
+def flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
 android {
     namespace "com.zinus.production.smart_production_app"
     compileSdk 36
     ndkVersion "27.0.12077973"
 
+    // ✅ Enable Java 8 features + desugaring
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = "1.8"
     }
 
     sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
+        main.java.srcDirs += "src/main/kotlin"
     }
 
     defaultConfig {
@@ -46,48 +41,52 @@ android {
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        setProperty("archivesBaseName", "zinus-production-v$versionName")
         multiDexEnabled true
+        setProperty("archivesBaseName", "zinus-production-v$versionName")
     }
-    
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
         }
         debug {
-            // Removed applicationIdSuffix to match google-services.json package name
+            // ⚙️ Removed applicationIdSuffix to match google-services.json
             versionNameSuffix "-debug"
             minifyEnabled false
         }
     }
+
+    // (Opsional) Jika muncul error lint di beberapa plugin modern
+    lint {
+        disable 'InvalidPackage'
+        checkReleaseBuilds false
+    }
 }
 
 flutter {
-    source '../..'
+    source "../../"
 }
 
 dependencies {
-    implementation 'androidx.multidex:multidex:2.0.1'
+    // ✅ Multidex untuk app besar
+    implementation "androidx.multidex:multidex:2.0.1"
 
-    // Import the Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    // ✅ Firebase BoM (Bill of Materials)
+    implementation platform("com.google.firebase:firebase-bom:33.1.2")
+    implementation "com.google.firebase:firebase-messaging"
 
-    // Add the dependency for the Firebase Cloud Messaging library
-    // When using the BoM, you don't specify versions in Firebase library dependencies
-    implementation("com.google.firebase:firebase-messaging")
+    // ✅ Desugaring lib agar kompatibel dengan Java 8+ API
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"
 }
 
-// Apply google-services plugin at the very end
-apply plugin: 'com.google.gms.google-services'
+// ✅ Apply plugin Google Services (Firebase)
+apply plugin: "com.google.gms.google-services"
 
-// Fix for extractDeepLinksDebug task dependency issue
-// This ensures processDebugGoogleServices completes before extractDeepLinksDebug
+// ✅ Fix dependency task order untuk Flutter 3.24+
 tasks.configureEach { task ->
-    if (task.name == 'extractDeepLinksDebug' || task.name == 'extractDeepLinksRelease') {
-        task.mustRunAfter tasks.matching { it.name.startsWith('process') && it.name.contains('GoogleServices') }
+    if (task.name == "extractDeepLinksDebug" || task.name == "extractDeepLinksRelease") {
+        task.mustRunAfter tasks.matching { it.name.startsWith("process") && it.name.contains("GoogleServices") }
     }
 }
