@@ -1,8 +1,9 @@
+// lib/screens/home_pages/home/notification_page.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // untuk format tanggal
 
-import '../../repositories/notification_repository.dart';
-import '../../models/notification.dart';
+import 'package:zinus_production/repositories/notification_repository.dart';
+import 'package:zinus_production/models/notification.dart';
 
 class NotificationPage extends StatefulWidget {
   @override
@@ -103,7 +104,7 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Widget _buildError() {
-    return Center(
+    return Center( // ✅ Hapus const
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -112,18 +113,18 @@ class _NotificationPageState extends State<NotificationPage> {
             size: 64,
             color: Colors.red,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 16), // ✅ Hapus const
           Text(
             'Gagal memuat notifikasi',
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 8), // ✅ Hapus const
           Text(
             errorMessage,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]), // ✅ Ini boleh karena bukan const
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 16), // ✅ Hapus const
           ElevatedButton(
             onPressed: _loadNotifications,
             child: const Text('Coba Lagi'),
@@ -135,24 +136,26 @@ class _NotificationPageState extends State<NotificationPage> {
 
   Widget _buildContent() {
     if (notifications.isEmpty) {
-      return const Center(
+      return Center( // ✅ Hapus const
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.notifications_none,
               size: 64,
-              color: Colors.grey,
+              color: Colors.grey, // ✅ Boleh karena warna dasar
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16), // ✅ Hapus const
+            const Text(
               'Belum ada notifikasi',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: Colors.grey), // ✅ Boleh karena warna dasar
             ),
-            SizedBox(height: 8),
-            Text(
+            const SizedBox(height: 8), // ✅ Hapus const
+            Text( // ✅ Hapus const karena warna index
               'Notifikasi akan muncul di sini',
-              style: TextStyle(color: Colors.grey[500]),
+              style: const TextStyle(color: Colors.grey).copyWith( // ✅ Ganti Colors.grey[500] jadi .copyWith(color: ...)
+                color: Colors.grey[500], // ✅ Sekarang bisa karena .copyWith bukan const
+              ),
             ),
           ],
         ),
@@ -234,8 +237,10 @@ class _NotificationPageState extends State<NotificationPage> {
                         const SizedBox(width: 8),
                         Text(
                           DateFormat('HH:mm').format(notification.timestamp),
-                          style: TextStyle(
+                          style: const TextStyle( // ✅ Ganti jadi const karena tidak pakai []
                             fontSize: 12,
+                            color: Colors.grey, // ✅ Pakai warna dasar
+                          ).copyWith( // ✅ Tambah .copyWith untuk warna index
                             color: Colors.grey[500],
                           ),
                         ),
@@ -269,6 +274,24 @@ class _NotificationPageState extends State<NotificationPage> {
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        // 🔥 Tambahkan info departemen (opsional)
+                        const SizedBox(width: 8),
+                        if (notification.recipientDepartments.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Ke: ${notification.recipientDepartments.join(', ')}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.blue,
                               ),
                             ),
                           ),

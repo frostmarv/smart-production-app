@@ -2,8 +2,9 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart'; // Untuk kIsWeb
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/rendering.dart'; // Untuk RenderRepaintBoundary
 import 'package:intl/intl.dart';
 import 'package:zinus_production/repositories/workable/workable_bonding_repository.dart';
 import 'package:path_provider/path_provider.dart';
@@ -18,9 +19,9 @@ class WorkableBondingRejectPage extends StatefulWidget {
 
 class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
     with TickerProviderStateMixin {
-  List<dynamic>? _rejectData; // ✅ Simpan data ke state
+  late Future<List<dynamic>> _rejectDataFuture;
   late AnimationController _animationController;
-  final GlobalKey _screenshotKey = GlobalKey();
+  final GlobalKey _tableKey = GlobalKey(); // ✅ Untuk screenshot area spesifik
 
   @override
   void initState() {
@@ -29,7 +30,7 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _fetchData();
+    _rejectDataFuture = WorkableBondingRepository.getWorkableBondingReject();
   }
 
   @override
@@ -38,79 +39,65 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
     super.dispose();
   }
 
-  Future<void> _fetchData() async {
-    try {
-      final data = await WorkableBondingRepository.getWorkableBondingReject();
-      if (mounted) {
-        setState(() {
-          _rejectData = data;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _rejectData = null;
-        });
-      }
-      _showMessage('Gagal memuat data NG & Replacement: $e');
-    }
-  }
-
-  // ✅ Capture tabel dari offscreen — pastikan data sudah siap
+  // ✅ Tangkap seluruh area tabel (semua kolom horizontal)
   Future<Uint8List?> _captureTable() async {
-    if (_rejectData == null) {
-      debugPrint("❌ Data NG & Replacement belum tersedia untuk di-capture");
-      return null;
-    }
-
-    // Tunggu layout selesai + delay kecil untuk keandalan
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final boundary = _screenshotKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-    if (boundary == null) {
-      debugPrint("❌ RepaintBoundary tidak ditemukan");
+    if (kIsWeb) {
+      // Tidak didukung di web
+      _showMessage('Fitur screenshot tidak didukung di web.');
       return null;
     }
 
     try {
-      final image = await boundary.toImage(pixelRatio: 2.0);
+      final boundary = _tableKey.currentContext?.findRenderObject();
+      if (boundary == null || boundary is! RenderRepaintBoundary) {
+        _showMessage('Gagal mengambil tangkapan layar. Widget tidak ditemukan.');
+        return null;
+      }
+
+      final image = await boundary.toImage(pixelRatio: 2.0); // Kualitas tinggi
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       return byteData?.buffer.asUint8List();
     } catch (e) {
-      debugPrint("❌ Capture error: $e");
+      _showMessage('Gagal mengambil tangkapan layar: $e');
       return null;
     }
   }
 
   Future<void> _captureAndShare() async {
-    try {
-      final image = await _captureTable();
-      if (image == null) {
-        _showMessage('Gagal mengambil tangkapan layar.');
-        return;
-      }
-
-      await Share.shareXFiles([
-        XFile.fromData(
-          image,
-          mimeType: 'image/png',
-          name: 'workable_reject_summary.png',
-        ),
-      ], text: 'Ini adalah data NG & Replacement Workable Bonding');
-      _showMessage('Gambar telah dibagikan!');
-    } catch (e) {
-      _showMessage('Gagal membagikan gambar: $e');
+    if (kIsWeb) {
+      _showMessage('Fitur bagikan gambar tidak didukung di web.');
+      return;
     }
+
+    final image = await _captureTable();
+    if (image == null) {
+      // _showMessage('Gagal mengambil tangkapan layar.'); // Error sudah ditangani di _captureTable
+      return;
+    }
+
+    await Share.shareXFiles([
+      XFile.fromData(
+        image,
+        mimeType: 'image/png',
+        name: 'workable_reject_summary.png',
+      ),
+    ], text: 'Ini adalah data NG & Replacement Workable Bonding');
+    _showMessage('Gambar telah dibagikan!');
   }
 
   Future<void> _downloadImage() async {
-    try {
-      final image = await _captureTable();
-      if (image == null) {
-        _showMessage('Gagal mengambil tangkapan layar.');
-        return;
-      }
+    if (kIsWeb) {
+      _showMessage('Fitur unduh gambar tidak didukung di web.');
+      return;
+    }
 
+    final image = await _captureTable();
+    if (image == null) {
+      // _showMessage('Gagal mengambil tangkapan layar.'); // Error sudah ditangani di _captureTable
+      return;
+    }
+
+    try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/workable_bonding_reject.png');
       await file.writeAsBytes(image);
@@ -378,7 +365,11 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: _fetchData,
+              onPressed: () {
+                setState(() {
+                  _rejectDataFuture = WorkableBondingRepository.getWorkableBondingReject();
+                });
+              },
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text("Coba Lagi"),
               style: ElevatedButton.styleFrom(
@@ -505,12 +496,7 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
     );
   }
 
-  Widget _buildTableContainer() {
-    if (_rejectData == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final items = _rejectData!;
+  Widget _buildTableContainer(List<dynamic> items) {
     final numberFormat = NumberFormat("#,##0", "en_US");
 
     return FadeTransition(
@@ -586,23 +572,27 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
                   ],
                 ),
               ),
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(16.0),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 1100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTableHeader(),
-                        const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
-                        if (items.isEmpty)
-                          _buildEmptyPlaceholder('Tidak ada data NG & Replacement tersedia.')
-                        else
-                          ...items.map((item) => _buildTableRow(item, numberFormat)).toList(),
-                      ],
+              // ✅ RepaintBoundary ditempatkan di sini, membungkus seluruh area tabel
+              RepaintBoundary(
+                key: _tableKey,
+                child: Container(
+                  color: Colors.white, // ✅ Latar putih agar hasil screenshot terang
+                  padding: const EdgeInsets.all(16.0),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 1100),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildTableHeader(),
+                          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+                          if (items.isEmpty)
+                            _buildEmptyPlaceholder('Tidak ada data NG & Replacement tersedia.')
+                          else
+                            ...items.map((item) => _buildTableRow(item, numberFormat)).toList(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -614,12 +604,20 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
     );
   }
 
-  Widget _buildDashboardView() {
-    if (_rejectData == null) {
+  Widget _buildDashboardView(AsyncSnapshot<List<dynamic>> snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final items = _rejectData!;
+    if (snapshot.hasError) {
+      return _buildErrorPlaceholder('Gagal memuat  ${snapshot.error}');
+    }
+
+    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+      return _buildErrorPlaceholder('Tidak ada data NG & Replacement tersedia.');
+    }
+
+    final items = snapshot.data!;
     final totalItems = items.length;
     final totalOrder = items.fold<int>(0, (sum, item) => sum + ((item['quantityOrder'] ?? 0) as num).toInt());
 
@@ -630,7 +628,7 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
         children: [
           _buildSummarySection(totalItems, totalOrder),
           const SizedBox(height: 24),
-          _buildTableContainer(),
+          _buildTableContainer(items),
         ],
       ),
     );
@@ -679,7 +677,9 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
                   _downloadImage();
                   break;
                 case 'refresh':
-                  _fetchData();
+                  setState(() {
+                    _rejectDataFuture = WorkableBondingRepository.getWorkableBondingReject();
+                  });
                   break;
               }
             },
@@ -722,37 +722,11 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
         ],
       ),
       backgroundColor: const Color(0xFFF8FAFC),
-      body: Stack(
-        children: [
-          // ✅ UI utama — gunakan state langsung
-          _buildDashboardView(),
-
-          // ✅ Offscreen widget — SELALU ada, gunakan data state
-          Offstage(
-            offstage: true,
-            child: RepaintBoundary(
-              key: _screenshotKey,
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(16.0),
-                width: 1300, // Lebar cukup untuk semua kolom NG & Replacement
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTableHeader(),
-                    const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
-                    if (_rejectData == null)
-                      const SizedBox.shrink()
-                    else if (_rejectData!.isEmpty)
-                      _buildEmptyPlaceholder('Tidak ada data NG & Replacement tersedia.')
-                    else
-                      ..._rejectData!.map((item) => _buildTableRow(item, NumberFormat("#,##0", "en_US"))).toList(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+      body: FutureBuilder<List<dynamic>>(
+        future: _rejectDataFuture,
+        builder: (context, snapshot) {
+          return _buildDashboardView(snapshot);
+        },
       ),
     );
   }

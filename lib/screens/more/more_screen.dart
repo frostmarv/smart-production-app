@@ -1,7 +1,7 @@
-
 // lib/screens/more/more_screen.dart
 import 'package:flutter/material.dart';
 import 'package:zinus_production/services/auth_service.dart'; // Import AuthService
+import 'profile_screen.dart'; // 🔥 Import ProfileScreen
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -12,7 +12,7 @@ class MoreScreen extends StatelessWidget {
       onTap: () async {
         if (title == "Logout") {
           await AuthService.logout();
-          // Navigasi ke layar login atau splash screen setelah logout
+          // 🔥 GANTI: Hapus semua stack dan arahkan ke login
           Navigator.of(context).pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -86,66 +86,78 @@ class MoreScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile Section
-          FutureBuilder<Map<String, dynamic>?>(
-            future: AuthService.getUser(),
-            builder: (context, snapshot) {
-              String userName = "User Profile";
-              if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-                userName = snapshot.data?['name'] ?? "User Profile";
-              }
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(Icons.person_rounded, color: Colors.white, size: 32),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userName, // Menggunakan nama pengguna dari AuthService
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            "Smart Production System",
-                            style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+          // 🔥 GANTI: Jadikan profil bisa di-klik
+          GestureDetector(
+            // onTap: () => Navigator.pushNamed(context, '/profile'), // 👈 Jika kamu pakai named route
+            onTap: () {
+              // Navigasi ke ProfileScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
               );
             },
+            child: FutureBuilder<Map<String, dynamic>?>(
+              future: AuthService.getUser(),
+              builder: (context, snapshot) {
+                String userName = "User Profile";
+                if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+                  userName = snapshot.data?['name'] ?? "User Profile"; // Ganti 'name' sesuai API kamu
+                }
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(Icons.person_rounded, color: Colors.white, size: 32),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              userName, // Menggunakan nama pengguna dari AuthService
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              "Smart Production System",
+                              style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Tambahkan ikon panah untuk menunjukkan bahwa ini bisa di-klik
+                      const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF94A3B8), size: 16),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
           const SizedBox(height: 32),
 

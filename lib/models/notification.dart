@@ -2,7 +2,7 @@ class NotificationModel {
   final String id;
   final String title;
   final String message;
-  final List<String> recipientRoles;
+  final List<String> recipientDepartments; // Ganti dari recipientRoles
   final String type;
   final String? link;
   final bool readStatus;
@@ -16,7 +16,7 @@ class NotificationModel {
     required this.id,
     required this.title,
     required this.message,
-    required this.recipientRoles,
+    required this.recipientDepartments, // Ganti dari recipientRoles
     required this.type,
     this.link,
     required this.readStatus,
@@ -32,7 +32,7 @@ class NotificationModel {
       id: json['id'],
       title: json['title'],
       message: json['message'],
-      recipientRoles: List<String>.from(json['recipientRoles']),
+      recipientDepartments: List<String>.from(json['recipientDepartments']), // Ganti dari recipientRoles
       type: json['type'],
       link: json['link'],
       readStatus: json['readStatus'] ?? false,
@@ -49,7 +49,7 @@ class NotificationModel {
       'id': id,
       'title': title,
       'message': message,
-      'recipientRoles': recipientRoles,
+      'recipientDepartments': recipientDepartments, // Ganti dari recipientRoles
       'type': type,
       'link': link,
       'readStatus': readStatus,
@@ -65,7 +65,7 @@ class NotificationModel {
     String? id,
     String? title,
     String? message,
-    List<String>? recipientRoles,
+    List<String>? recipientDepartments, // Ganti dari recipientRoles
     String? type,
     String? link,
     bool? readStatus,
@@ -79,7 +79,7 @@ class NotificationModel {
       id: id ?? this.id,
       title: title ?? this.title,
       message: message ?? this.message,
-      recipientRoles: recipientRoles ?? this.recipientRoles,
+      recipientDepartments: recipientDepartments ?? this.recipientDepartments, // Ganti dari recipientRoles
       type: type ?? this.type,
       link: link ?? this.link,
       readStatus: readStatus ?? this.readStatus,

@@ -1,75 +1,58 @@
+// lib/repositories/notification_repository.dart
 import 'dart:convert';
-import '../http_client.dart';
-import '../models/notification.dart';
+import 'package:zinus_production/services/http_client.dart';
+import 'package:zinus_production/models/notification.dart';
 
 class NotificationRepository {
-  final HttpClient _httpClient;
-
-  NotificationRepository() : _httpClient = HttpClient();
+  // ✅ Gunakan HttpClient secara static
 
   Future<List<NotificationModel>> getNotifications({Map<String, String>? params}) async {
-    final response = await _httpClient.get('/api/notification', params: params);
-    
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final List<dynamic> notificationsList = data['data'];
-      
+    // Gunakan HttpClient.get secara static, dan kirim params sebagai query string
+    final response = await HttpClient.get('/api/notification', params: params);
+
+    if (response is Map && response.containsKey('data')) {
+      final List<dynamic> notificationsList = response['data'];
       return notificationsList
           .map((json) => NotificationModel.fromJson(json))
           .toList();
     } else {
-      throw Exception('Failed to load notifications: ${response.body}');
+      throw Exception('Invalid response format or no data key');
     }
   }
 
   Future<NotificationModel> getNotificationById(String id) async {
-    final response = await _httpClient.get('/api/notification/$id');
+    final response = await HttpClient.get('/api/notification/$id');
     
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return NotificationModel.fromJson(data['data']);
+    if (response is Map && response.containsKey('data')) {
+      return NotificationModel.fromJson(response['data']);
     } else {
-      throw Exception('Failed to load notification: ${response.body}');
+      throw Exception('Invalid response format or no data key');
     }
   }
 
   Future<void> markAsRead(String id) async {
-    final response = await _httpClient.put('/api/notification/$id/read');
-    
-    if (response.statusCode != 200) {
-      throw Exception('Failed to mark notification as read: ${response.body}');
-    }
+    await HttpClient.put('/api/notification/$id/read', null);
   }
 
   Future<void> markMultipleAsRead(List<String> ids) async {
-    final response = await _httpClient.put(
-      '/api/notification/read/multiple',
-      data: {'ids': ids},
-    );
-    
-    if (response.statusCode != 200) {
-      throw Exception('Failed to mark notifications as read: ${response.body}');
-    }
+    // ✅ Koreksi: hapus `data:` dan gunakan parameter posisi
+    await HttpClient.put('/api/notification/read/multiple', {'ids': ids});
   }
 
-  Future<void> markAllAsRead({String? recipientRole}) async {
-    final params = recipientRole != null ? {'recipientRole': recipientRole} : null;
-    final response = await _httpClient.put('/api/notification/read/all', params: params);
-    
-    if (response.statusCode != 200) {
-      throw Exception('Failed to mark all notifications as read: ${response.body}');
-    }
+  Future<void> markAllAsRead({String? recipientDepartment}) async {
+    final params = recipientDepartment != null ? {'recipientDepartment': recipientDepartment} : null;
+    // ✅ Data body = null, params sebagai query
+    await HttpClient.put('/api/notification/read/all', null, params: params);
   }
 
-  Future<int> getUnreadCount({String? recipientRole}) async {
-    final params = recipientRole != null ? {'recipientRole': recipientRole} : null;
-    final response = await _httpClient.get('/api/notification/unread-count', params: params);
-    
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data['data']['count'] ?? 0;
+  Future<int> getUnreadCount({String? recipientDepartment}) async {
+    final params = recipientDepartment != null ? {'recipientDepartment': recipientDepartment} : null;
+    final response = await HttpClient.get('/api/notification/unread-count', params: params);
+
+    if (response is Map && response.containsKey('data') && response['data'] is Map) {
+      return (response['data'] as Map)['count'] ?? 0;
     } else {
-      throw Exception('Failed to get unread count: ${response.body}');
+      throw Exception('Invalid unread count response or no count key');
     }
   }
 }

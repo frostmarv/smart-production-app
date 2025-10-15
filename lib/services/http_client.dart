@@ -5,12 +5,19 @@ import 'environment_service.dart';
 import 'auth_service.dart';
 
 class HttpClient {
-  /// Normalisasi URL: pastikan tidak ada double slash
-  static String _buildUrl(String endpoint) {
+  /// Normalisasi URL: pastikan tidak ada double slash, dan tambahkan query params jika ada
+  static String _buildUrl(String endpoint, {Map<String, String>? params}) {
     final baseUrl = EnvironmentService.apiUrl;
     final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
     final cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-    return '$cleanBaseUrl/$cleanEndpoint';
+    String url = '$cleanBaseUrl/$cleanEndpoint';
+
+    if (params != null && params.isNotEmpty) {
+      final queryString = Uri(queryParameters: params).query;
+      url += '?$queryString';
+    }
+
+    return url;
   }
 
   /// Ambil headers dasar + access token (jika ada)
@@ -26,9 +33,10 @@ class HttpClient {
   static Future<dynamic> post(
     String endpoint,
     dynamic data, {
+    Map<String, String>? params, // <-- Tambahkan params
     Map<String, String>? headers,
   }) async {
-    final url = _buildUrl(endpoint);
+    final url = _buildUrl(endpoint, params: params); // <-- Gunakan params
     print('📤 POST: $url');
 
     final baseHeaders = await _getBaseHeaders();
@@ -63,8 +71,12 @@ class HttpClient {
     return jsonDecode(response.body);
   }
 
-  static Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
-    final url = _buildUrl(endpoint);
+  static Future<dynamic> get(
+    String endpoint, {
+    Map<String, String>? params, // <-- Tambahkan params
+    Map<String, String>? headers,
+  }) async {
+    final url = _buildUrl(endpoint, params: params); // <-- Gunakan params
     print('🔍 GET: $url');
     
     final baseHeaders = await _getBaseHeaders();
@@ -89,8 +101,13 @@ class HttpClient {
     return jsonDecode(response.body);
   }
 
-  static Future<dynamic> put(String endpoint, dynamic data, {Map<String, String>? headers}) async {
-    final url = _buildUrl(endpoint);
+  static Future<dynamic> put(
+    String endpoint,
+    dynamic data, {
+    Map<String, String>? params, // <-- Tambahkan params
+    Map<String, String>? headers,
+  }) async {
+    final url = _buildUrl(endpoint, params: params); // <-- Gunakan params
     print('✏️ PUT: $url');
 
     final baseHeaders = await _getBaseHeaders();
@@ -125,8 +142,12 @@ class HttpClient {
     return jsonDecode(response.body);
   }
 
-  static Future<void> delete(String endpoint, {Map<String, String>? headers}) async {
-    final url = _buildUrl(endpoint);
+  static Future<void> delete(
+    String endpoint, {
+    Map<String, String>? params, // <-- Tambahkan params
+    Map<String, String>? headers,
+  }) async {
+    final url = _buildUrl(endpoint, params: params); // <-- Gunakan params
     print('🗑️ DELETE: $url');
 
     final baseHeaders = await _getBaseHeaders();

@@ -1,8 +1,10 @@
-// lib/services/auth_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'http_client.dart';
+
+// 🔥 Import UserRepository untuk konsistensi
+import '../repositories/user_repository.dart';
 
 class AuthService {
   static const String _accessTokenKey = 'access_token';
@@ -21,7 +23,10 @@ class AuthService {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_accessTokenKey, response['access_token']);
         await prefs.setString(_refreshTokenKey, response['refresh_token']);
-        await prefs.setString(_userKey, jsonEncode(response['user']));
+        // 🔥 Simpan data user saat login
+        if (response.containsKey('user')) {
+          await prefs.setString(_userKey, jsonEncode(response['user']));
+        }
 
         return response;
       }
@@ -63,14 +68,31 @@ class AuthService {
     return prefs.getString(_refreshTokenKey);
   }
 
-  // Ambil data user
+  // 🔥 GANTI: Ambil data user dari API, tapi cache jika gagal
   static Future<Map<String, dynamic>?> getUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userStr = prefs.getString(_userKey);
-    if (userStr != null) {
-      return jsonDecode(userStr);
+    // 1. Cek apakah user sudah login (token valid)
+    if (!await isAuthenticated()) {
+      return null;
     }
-    return null;
+
+    // 2. Coba ambil dari API dulu (lebih fresh)
+    try {
+      final profile = await UserRepository.getProfile(); // ✅ Pakai repo
+      // Jika sukses, simpan ke cache
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userKey, jsonEncode(profile));
+      return profile;
+    } catch (e) {
+      print('❌ Gagal ambil user dari API: $e');
+      // Jika gagal, coba dari cache
+      final prefs = await SharedPreferences.getInstance();
+      final userStr = prefs.getString(_userKey);
+      if (userStr != null) {
+        print('🔄 Menggunakan data user dari cache');
+        return jsonDecode(userStr);
+      }
+      return null;
+    }
   }
 
   // Refresh access token menggunakan refresh token
@@ -82,7 +104,7 @@ class AuthService {
     }
 
     try {
-      final response = await HttpClient.post('/api/auth/refresh', {}, // kirim refresh token di header
+      final response = await HttpClient.post('/api/auth/refresh', {},
         headers: {'Authorization': 'Bearer $refreshToken'},
       );
 

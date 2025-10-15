@@ -2,8 +2,9 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart'; // Untuk kIsWeb
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/rendering.dart'; // Untuk RenderRepaintBoundary
 import 'package:intl/intl.dart';
 import 'package:zinus_production/repositories/workable/workable_bonding_repository.dart';
 import 'package:path_provider/path_provider.dart';
@@ -19,9 +20,9 @@ class WorkableBondingDetailPage extends StatefulWidget {
 
 class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
     with TickerProviderStateMixin {
-  List<dynamic>? _bondingData; // ✅ Simpan data ke state
+  late Future<List<dynamic>> _bondingDataFuture;
   late AnimationController _animationController;
-  final GlobalKey _screenshotKey = GlobalKey(); // Untuk RepaintBoundary
+  final GlobalKey _tableKey = GlobalKey(); // ✅ Untuk screenshot area spesifik
 
   @override
   void initState() {
@@ -30,7 +31,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _fetchData();
+    _bondingDataFuture = WorkableBondingRepository.getWorkableBondingDetail();
   }
 
   @override
@@ -39,79 +40,65 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
     super.dispose();
   }
 
-  Future<void> _fetchData() async {
-    try {
-      final data = await WorkableBondingRepository.getWorkableBondingDetail();
-      if (mounted) {
-        setState(() {
-          _bondingData = data;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _bondingData = null;
-        });
-      }
-      _showMessage('Gagal memuat data: $e');
-    }
-  }
-
-  // ✅ Capture tabel dari offscreen — pastikan data sudah siap
+  // ✅ Tangkap seluruh area tabel (semua kolom horizontal)
   Future<Uint8List?> _captureTable() async {
-    if (_bondingData == null) {
-      debugPrint("❌ Data belum tersedia untuk di-capture");
-      return null;
-    }
-
-    // Tunggu layout selesai + sedikit delay untuk keandalan
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final boundary = _screenshotKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-    if (boundary == null) {
-      debugPrint("❌ RepaintBoundary tidak ditemukan");
+    if (kIsWeb) {
+      // Tidak didukung di web
+      _showMessage('Fitur screenshot tidak didukung di web.');
       return null;
     }
 
     try {
-      final image = await boundary.toImage(pixelRatio: 2.0);
+      final boundary = _tableKey.currentContext?.findRenderObject();
+      if (boundary == null || boundary is! RenderRepaintBoundary) {
+        _showMessage('Gagal mengambil tangkapan layar. Widget tidak ditemukan.');
+        return null;
+      }
+
+      final image = await boundary.toImage(pixelRatio: 2.0); // Kualitas tinggi
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       return byteData?.buffer.asUint8List();
     } catch (e) {
-      debugPrint("❌ Capture error: $e");
+      _showMessage('Gagal mengambil tangkapan layar: $e');
       return null;
     }
   }
 
   Future<void> _captureAndShare() async {
-    try {
-      final image = await _captureTable();
-      if (image == null) {
-        _showMessage('Gagal mengambil tangkapan layar.');
-        return;
-      }
-
-      await Share.shareXFiles([
-        XFile.fromData(
-          image,
-          mimeType: 'image/png',
-          name: 'workable_bonding_detail.png',
-        ),
-      ], text: 'Ini adalah detail produksi Workable Bonding');
-      _showMessage('Gambar telah dibagikan!');
-    } catch (e) {
-      _showMessage('Gagal membagikan gambar: $e');
+    if (kIsWeb) {
+      _showMessage('Fitur bagikan gambar tidak didukung di web.');
+      return;
     }
+
+    final image = await _captureTable();
+    if (image == null) {
+      // _showMessage('Gagal mengambil tangkapan layar.'); // Error sudah ditangani di _captureTable
+      return;
+    }
+
+    await Share.shareXFiles([
+      XFile.fromData(
+        image,
+        mimeType: 'image/png',
+        name: 'workable_bonding_detail.png',
+      ),
+    ], text: 'Ini adalah detail produksi Workable Bonding');
+    _showMessage('Gambar telah dibagikan!');
   }
 
   Future<void> _downloadImage() async {
-    try {
-      final image = await _captureTable();
-      if (image == null) {
-        _showMessage('Gagal mengambil tangkapan layar.');
-        return;
-      }
+    if (kIsWeb) {
+      _showMessage('Fitur unduh gambar tidak didukung di web.');
+      return;
+    }
 
+    final image = await _captureTable();
+    if (image == null) {
+      // _showMessage('Gagal mengambil tangkapan layar.'); // Error sudah ditangani di _captureTable
+      return;
+    }
+
+    try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/workable_bonding_detail.png');
       await file.writeAsBytes(image);
@@ -137,7 +124,6 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
     );
   }
 
-  // --- Widget helpers (tidak berubah) ---
   Widget _buildStatusChip(String status) {
     Color bgColor, textColor;
     final lower = status.toLowerCase();
@@ -347,7 +333,11 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: _fetchData,
+              onPressed: () {
+                setState(() {
+                  _bondingDataFuture = WorkableBondingRepository.getWorkableBondingDetail();
+                });
+              },
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text("Coba Lagi"),
               style: ElevatedButton.styleFrom(
@@ -476,12 +466,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
     );
   }
 
-  Widget _buildTableContainer() {
-    if (_bondingData == null) {
-      return _buildErrorPlaceholder('Memuat data...');
-    }
-
-    final items = _bondingData!;
+  Widget _buildTableContainer(List<dynamic> items) {
     final numberFormat = NumberFormat("#,##0", "en_US");
 
     return FadeTransition(
@@ -557,23 +542,27 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
                   ],
                 ),
               ),
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(16.0),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 1000),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTableHeader(),
-                        const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
-                        if (items.isEmpty)
-                          _buildEmptyPlaceholder('Tidak ada data detail tersedia.')
-                        else
-                          ...items.map((item) => _buildTableRow(item, numberFormat)).toList(),
-                      ],
+              // ✅ RepaintBoundary ditempatkan di sini, membungkus seluruh area tabel
+              RepaintBoundary(
+                key: _tableKey,
+                child: Container(
+                  color: Colors.white, // ✅ Latar putih agar hasil screenshot terang
+                  padding: const EdgeInsets.all(16.0),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 1000),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildTableHeader(),
+                          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+                          if (items.isEmpty)
+                            _buildEmptyPlaceholder('Tidak ada data detail tersedia.')
+                          else
+                            ...items.map((item) => _buildTableRow(item, numberFormat)).toList(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -585,12 +574,20 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
     );
   }
 
-  Widget _buildDashboardView() {
-    if (_bondingData == null) {
+  Widget _buildDashboardView(AsyncSnapshot<List<dynamic>> snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final items = _bondingData!;
+    if (snapshot.hasError) {
+      return _buildErrorPlaceholder('Gagal memuat data: ${snapshot.error}');
+    }
+
+    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+      return _buildErrorPlaceholder('Tidak ada data tersedia.');
+    }
+
+    final items = snapshot.data!;
     final totalQuantity = items.fold<int>(0, (sum, item) => sum + ((item['quantityOrder'] ?? 0) as num).toInt());
     final totalItems = items.length;
     final runningItems = items.where((item) =>
@@ -603,7 +600,7 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
         children: [
           _buildSummarySection(totalItems, totalQuantity, runningItems),
           const SizedBox(height: 24),
-          _buildTableContainer(),
+          _buildTableContainer(items),
           const SizedBox(height: 16),
           Center(
             child: ElevatedButton.icon(
@@ -677,7 +674,9 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
                   _downloadImage();
                   break;
                 case 'refresh':
-                  _fetchData();
+                  setState(() {
+                    _bondingDataFuture = WorkableBondingRepository.getWorkableBondingDetail();
+                  });
                   break;
               }
             },
@@ -720,37 +719,11 @@ class _WorkableBondingDetailPageState extends State<WorkableBondingDetailPage>
         ],
       ),
       backgroundColor: const Color(0xFFF8FAFC),
-      body: Stack(
-        children: [
-          // ✅ UI utama — gunakan state langsung
-          _buildDashboardView(),
-
-          // ✅ Offscreen widget — SELALU ada, gunakan data state
-          Offstage(
-            offstage: true,
-            child: RepaintBoundary(
-              key: _screenshotKey,
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(16.0),
-                width: 1200, // Lebar tetap agar full tabel
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTableHeader(),
-                    const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
-                    if (_bondingData == null)
-                      const SizedBox.shrink()
-                    else if (_bondingData!.isEmpty)
-                      _buildEmptyPlaceholder('Tidak ada data detail tersedia.')
-                    else
-                      ..._bondingData!.map((item) => _buildTableRow(item, NumberFormat("#,##0", "en_US"))).toList(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+      body: FutureBuilder<List<dynamic>>(
+        future: _bondingDataFuture,
+        builder: (context, snapshot) {
+          return _buildDashboardView(snapshot);
+        },
       ),
     );
   }

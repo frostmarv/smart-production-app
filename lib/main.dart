@@ -1,45 +1,45 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-// --- Import services ---
+
+// --- Services ---
 import 'services/environment_service.dart';
 import 'services/permission_service.dart';
-// --- Import screen utama ---
-import 'screens/splash_screen.dart';
 
-/// Fungsi utama aplikasi.
-/// 
-/// Aplikasi menggunakan backend API dengan konfigurasi environment
-/// yang dapat diatur melalui file .env
+// --- Screens ---
+import 'screens/splash_screen.dart';
+import 'screens/login_screen.dart'; // 👈 pastikan file ini ada
+import 'screens/home_pages/home/home_page_content.dart'; // Home utama setelah login
+import 'screens/home_pages/home/notification_page.dart'; // 👈 halaman notifikasi
+import 'screens/more/profile_screen.dart'; // 🔥 Tambahkan ini agar bisa navigasi ke profile
+
 void main() async {
-  // Pastikan Flutter binding sudah diinisialisasi
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inisialisasi environment service dengan metode yang benar
   await EnvironmentService.init();
-  
-  // Request permissions saat app pertama kali dibuka
-  // Popup permission akan muncul di sini
   await PermissionService.requestInitialPermissions();
-  
-  // --- Jalankan aplikasi ---
   runApp(const MyApp());
 }
 
-/// Widget root aplikasi.
 class MyApp extends StatelessWidget {
-  /// Membuat instance [MyApp].
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Zinus Production',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
-      debugShowCheckedModeBanner: false,
+      // 🔥 Gunakan initialRoute + routes
+      initialRoute: '/splash',
+      routes: {
+        '/splash': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const HomePageContent(),
+        '/notifications': (context) => NotificationPage(), // ✅ Sudah ada
+        '/profile': (context) => const ProfileScreen(), // 🔥 Ditambahkan agar bisa pakai pushNamed
+      },
     );
   }
 }
