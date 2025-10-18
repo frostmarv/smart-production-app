@@ -11,6 +11,7 @@ import 'screens/login_screen.dart'; // 👈 pastikan file ini ada
 import 'screens/home_pages/home/home_page_content.dart'; // Home utama setelah login
 import 'screens/home_pages/home/notification_page.dart'; // 👈 halaman notifikasi
 import 'screens/more/profile_screen.dart'; // 🔥 Tambahkan ini agar bisa navigasi ke profile
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
