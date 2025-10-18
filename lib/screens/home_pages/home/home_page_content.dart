@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:zinus_production/screens/home_pages/workable/bonding/workable_bonding_page.dart';
 import 'package:zinus_production/screens/home_pages/more/more_home_page.dart';
-import 'package:zinus_production/services/auth_service.dart'; // 👈 Import AuthService
+import 'package:zinus_production/services/auth_service.dart';
 
 class HomePageContent extends StatelessWidget {
   const HomePageContent({super.key});
@@ -14,7 +14,7 @@ class HomePageContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome Section (versi baru)
+          // Welcome Section
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -46,15 +46,32 @@ class HomePageContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                FutureBuilder<Map<String, dynamic>?>(
+                // ✅ Tampilkan nama user dari cache AuthService (tanpa panggil API)
+                FutureBuilder<dynamic>(
                   future: AuthService.getUser(),
                   builder: (context, snapshot) {
-                    String userName = "User";
-                    if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-                      userName = snapshot.data?['name'] ?? "User";
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Text(
+                        "Loading... 👋",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
                     }
+
+                    String displayName = "User";
+                    if (snapshot.hasData && snapshot.data is Map) {
+                      final user = snapshot.data as Map;
+                      displayName = user['name'] ??
+                                   user['email']?.split('@').first ??
+                                   "User";
+                    }
+                    // Jika error atau tidak ada data, tetap tampilkan "User"
+
                     return Text(
-                      "$userName 👋",
+                      "$displayName 👋",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -217,7 +234,7 @@ class HomePageContent extends StatelessWidget {
     );
   }
 
-  // ✅ Stat Card tetap sama
+  // ✅ Stat Card (tidak berubah)
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -266,7 +283,7 @@ class HomePageContent extends StatelessWidget {
     );
   }
 
-  // ✅ Section Header tetap sama
+  // ✅ Section Header (tidak berubah)
   Widget _buildSectionHeader(String title) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -285,7 +302,7 @@ class HomePageContent extends StatelessWidget {
     );
   }
 
-  // ✨ BARU: Item Style DANA (KOTAK SEMPURNA, IKON + TEKS TERPUSAT)
+  // ✨ Dana Item (tidak berubah)
   Widget _buildDanaItem(
     BuildContext context,
     String label,
@@ -332,15 +349,13 @@ class HomePageContent extends StatelessWidget {
     );
   }
 
-  // ✨ BARU: Grid Layout DANA (4 Kolom di Mobile, 5+ di Tablet)
+  // ✨ Dana Grid (tidak berubah)
   Widget _buildDanaGrid(BuildContext context, List<Widget> items) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth;
-        // 4 kolom di mobile, 5 kolom di tablet
         final crossAxisCount = maxWidth > 800 ? 5 : 4;
         final spacing = 8.0;
-
         final itemWidth = (maxWidth - spacing * (crossAxisCount - 1)) / crossAxisCount;
 
         return Wrap(

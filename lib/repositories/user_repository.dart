@@ -3,84 +3,93 @@ import '../services/http_client.dart';
 
 class UserRepository {
   /// Ambil semua user
-  static Future<List<dynamic>> getAllUsers() async {
+  static Future<dynamic> getAllUsers() async {
     try {
-      final response = await HttpClient.get('/api/users');
-      return List<dynamic>.from(response);
-    } catch (e) {
-      throw Exception('Gagal mengambil daftar user: $e');
+      final data = await HttpClient.get('/api/users');
+      return data; // ✅ Langsung kembalikan, seperti JS
+    } catch (error) {
+      print('Gagal mengambil daftar user: $error');
+      rethrow; // ✅ Lempar ulang error asli
     }
   }
 
   /// Ambil detail user berdasarkan ID
-  static Future<Map<String, dynamic>> getUserById(String id) async {
+  static Future<dynamic> getUserById(String id) async {
     try {
-      final response = await HttpClient.get('/api/users/$id');
-      return Map<String, dynamic>.from(response);
-    } catch (e) {
-      throw Exception('Gagal mengambil detail user: $e');
+      final data = await HttpClient.get('/api/users/$id');
+      return data; // ✅
+    } catch (error) {
+      print('Gagal mengambil detail user: $error');
+      rethrow;
     }
   }
 
   /// Buat user baru
-  static Future<Map<String, dynamic>> createUser(Map<String, dynamic> userData) async {
+  static Future<dynamic> createUser(Map<String, dynamic> userData) async {
     try {
-      final response = await HttpClient.post('/api/users', userData);
-      return Map<String, dynamic>.from(response);
-    } catch (e) {
-      throw Exception('Gagal membuat user: $e');
+      final data = await HttpClient.post('/api/users', userData);
+      return data; // ✅
+    } catch (error) {
+      print('Gagal membuat user: $error');
+      rethrow;
     }
   }
 
   /// Update user berdasarkan ID
-  static Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> userData) async {
+  static Future<dynamic> updateUser(String id, Map<String, dynamic> userData) async {
     try {
-      final response = await HttpClient.put('/api/users/$id', userData);
-      return Map<String, dynamic>.from(response);
-    } catch (e) {
-      throw Exception('Gagal mengupdate user: $e');
+      final data = await HttpClient.put('/api/users/$id', userData);
+      return data; // ✅
+    } catch (error) {
+      print('Gagal mengupdate user: $error');
+      rethrow;
     }
   }
 
   /// Reset password user berdasarkan ID
-  static Future<Map<String, dynamic>> resetUserPassword(String userId, String newPassword) async {
+  static Future<dynamic> resetUserPassword(String userId, String newPassword) async {
     try {
-      final response = await HttpClient.put(
+      final data = await HttpClient.put(
         '/api/users/$userId/reset-password',
         {'newPassword': newPassword},
       );
-      return Map<String, dynamic>.from(response);
-    } catch (e) {
-      throw Exception('Gagal reset password: $e');
+      return data; // ✅
+    } catch (error) {
+      print('Gagal reset password: $error');
+      rethrow;
     }
   }
 
   /// Hapus user berdasarkan ID
-  static Future<void> deleteUser(String id) async {
+  static Future<dynamic> deleteUser(String id) async {
     try {
-      await HttpClient.delete('/api/users/$id');
-    } catch (e) {
-      throw Exception('Gagal menghapus user: $e');
+      final data = await HttpClient.delete('/api/users/$id');
+      return data; // ✅ Sesuai JS: kembalikan respons (bisa null, bisa objek)
+    } catch (error) {
+      print('Gagal menghapus user: $error');
+      rethrow;
     }
   }
 
   /// Ambil profile user sendiri
-  static Future<Map<String, dynamic>> getProfile() async {
+  static Future<dynamic> getProfile() async {
     try {
-      final response = await HttpClient.get('/api/users/profile');
-      return Map<String, dynamic>.from(response);
-    } catch (e) {
-      throw Exception('Gagal mengambil profile: $e');
+      final data = await HttpClient.get('/api/users/profile');
+      return data; // ✅
+    } catch (error) {
+      print('Gagal mengambil profile: $error');
+      rethrow;
     }
   }
 
   /// Update profile user sendiri
-  static Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> profileData) async {
+  static Future<dynamic> updateProfile(Map<String, dynamic> profileData) async {
     try {
-      final response = await HttpClient.put('/api/users/profile', profileData);
-      return Map<String, dynamic>.from(response);
-    } catch (e) {
-      throw Exception('Gagal mengupdate profile: $e');
+      final data = await HttpClient.put('/api/users/profile', profileData);
+      return data; // ✅
+    } catch (error) {
+      print('Gagal mengupdate profile: $error');
+      rethrow;
     }
   }
 }

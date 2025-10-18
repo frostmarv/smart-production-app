@@ -2,9 +2,9 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'package:flutter/foundation.dart'; // Untuk kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart'; // Untuk RenderRepaintBoundary
+import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:zinus_production/repositories/workable/workable_bonding_repository.dart';
 import 'package:path_provider/path_provider.dart';
@@ -21,7 +21,7 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
     with TickerProviderStateMixin {
   late Future<List<dynamic>> _rejectDataFuture;
   late AnimationController _animationController;
-  final GlobalKey _tableKey = GlobalKey(); // ✅ Untuk screenshot area spesifik
+  final GlobalKey _captureKey = GlobalKey(); // 🔑 Untuk seluruh konten (bukan hanya tabel)
 
   @override
   void initState() {
@@ -30,7 +30,17 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _rejectDataFuture = WorkableBondingRepository.getWorkableBondingReject();
+    _loadData();
+  }
+
+  void _loadData() {
+    _rejectDataFuture = WorkableBondingRepository.getWorkableBondingReject().then((data) {
+      if (!mounted) return data;
+      if (_animationController.isDismissed) {
+        _animationController.forward();
+      }
+      return data;
+    });
   }
 
   @override
@@ -39,22 +49,22 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
     super.dispose();
   }
 
-  // ✅ Tangkap seluruh area tabel (semua kolom horizontal)
-  Future<Uint8List?> _captureTable() async {
+  // ✅ Tangkap SELURUH konten (termasuk off-screen)
+  Future<Uint8List?> _captureFullContent() async {
     if (kIsWeb) {
-      // Tidak didukung di web
       _showMessage('Fitur screenshot tidak didukung di web.');
       return null;
     }
 
     try {
-      final boundary = _tableKey.currentContext?.findRenderObject();
-      if (boundary == null || boundary is! RenderRepaintBoundary) {
+      final boundary = _captureKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
         _showMessage('Gagal mengambil tangkapan layar. Widget tidak ditemukan.');
         return null;
       }
 
-      final image = await boundary.toImage(pixelRatio: 2.0); // Kualitas tinggi
+      // Gunakan pixelRatio tinggi untuk kualitas tajam
+      final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       return byteData?.buffer.asUint8List();
     } catch (e) {
@@ -69,20 +79,22 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
       return;
     }
 
-    final image = await _captureTable();
-    if (image == null) {
-      // _showMessage('Gagal mengambil tangkapan layar.'); // Error sudah ditangani di _captureTable
-      return;
-    }
+    final image = await _captureFullContent();
+    if (image == null) return;
 
-    await Share.shareXFiles([
-      XFile.fromData(
-        image,
-        mimeType: 'image/png',
-        name: 'workable_reject_summary.png',
-      ),
-    ], text: 'Ini adalah data NG & Replacement Workable Bonding');
-    _showMessage('Gambar telah dibagikan!');
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/workable_reject_summary.png');
+      await file.writeAsBytes(image);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Ini adalah data NG & Replacement Workable Bonding',
+      );
+      _showMessage('Gambar telah dibagikan!');
+    } catch (e) {
+      _showMessage('Gagal membagikan: $e');
+    }
   }
 
   Future<void> _downloadImage() async {
@@ -91,11 +103,8 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
       return;
     }
 
-    final image = await _captureTable();
-    if (image == null) {
-      // _showMessage('Gagal mengambil tangkapan layar.'); // Error sudah ditangani di _captureTable
-      return;
-    }
+    final image = await _captureFullContent();
+    if (image == null) return;
 
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -365,11 +374,7 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _rejectDataFuture = WorkableBondingRepository.getWorkableBondingReject();
-                });
-              },
+              onPressed: _loadData,
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text("Coba Lagi"),
               style: ElevatedButton.styleFrom(
@@ -499,108 +504,124 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
   Widget _buildTableContainer(List<dynamic> items) {
     final numberFormat = NumberFormat("#,##0", "en_US");
 
-    return FadeTransition(
-      opacity: CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEC4899).withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+            spreadRadius: -4,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFEC4899).withOpacity(0.08),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-              spreadRadius: -4,
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFFF8FAFC),
+                    Colors.white,
+                  ],
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: const Color(0xFFE2E8F0),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFEC4899), Color(0xFFDB2777)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_outlined,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    "NG & Replacement Data",
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1E293B),
+                          letterSpacing: -0.5,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 1100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTableHeader(),
+                      const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+                      if (items.isEmpty)
+                        _buildEmptyPlaceholder('Tidak ada data NG & Replacement tersedia.')
+                      else
+                        ...items.map((item) => _buildTableRow(item, numberFormat)).toList(),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+      ),
+    );
+  }
+
+  Widget _buildDashboardContent(List<dynamic> items) {
+    final numberFormat = NumberFormat("#,##0", "en_US");
+    final totalItems = items.length;
+    final totalOrder = items.fold<int>(0, (sum, item) => sum + ((item['quantityOrder'] ?? 0) as num).toInt());
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FadeTransition(
+          opacity: CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFFF8FAFC),
-                      Colors.white,
-                    ],
-                  ),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: const Color(0xFFE2E8F0),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFEC4899), Color(0xFFDB2777)],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.warning_amber_outlined,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      "NG & Replacement Data",
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1E293B),
-                            letterSpacing: -0.5,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              // ✅ RepaintBoundary ditempatkan di sini, membungkus seluruh area tabel
-              RepaintBoundary(
-                key: _tableKey,
-                child: Container(
-                  color: Colors.white, // ✅ Latar putih agar hasil screenshot terang
-                  padding: const EdgeInsets.all(16.0),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minWidth: 1100),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildTableHeader(),
-                          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
-                          if (items.isEmpty)
-                            _buildEmptyPlaceholder('Tidak ada data NG & Replacement tersedia.')
-                          else
-                            ...items.map((item) => _buildTableRow(item, numberFormat)).toList(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              _buildSummarySection(totalItems, totalOrder),
+              const SizedBox(height: 24),
+              _buildTableContainer(items),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -610,7 +631,7 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
     }
 
     if (snapshot.hasError) {
-      return _buildErrorPlaceholder('Gagal memuat  ${snapshot.error}');
+      return _buildErrorPlaceholder('Gagal memuat data: ${snapshot.error}');
     }
 
     if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -618,18 +639,16 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
     }
 
     final items = snapshot.data!;
-    final totalItems = items.length;
-    final totalOrder = items.fold<int>(0, (sum, item) => sum + ((item['quantityOrder'] ?? 0) as num).toInt());
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 100, left: 20, right: 20, bottom: 30),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSummarySection(totalItems, totalOrder),
-          const SizedBox(height: 24),
-          _buildTableContainer(items),
-        ],
+    // ✅ Seluruh konten yang bisa di-capture
+    return RepaintBoundary(
+      key: _captureKey,
+      child: Container(
+        color: Colors.white, // Latar putih penuh untuk screenshot
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(top: 100, left: 20, right: 20, bottom: 30),
+          child: _buildDashboardContent(items),
+        ),
       ),
     );
   }
@@ -677,9 +696,7 @@ class _WorkableBondingRejectPageState extends State<WorkableBondingRejectPage>
                   _downloadImage();
                   break;
                 case 'refresh':
-                  setState(() {
-                    _rejectDataFuture = WorkableBondingRepository.getWorkableBondingReject();
-                  });
+                  _loadData();
                   break;
               }
             },

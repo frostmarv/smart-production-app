@@ -2,6 +2,9 @@
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET"/>
     
+    <!-- FCM related permissions -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/> <!-- For Android 13 (API 33) and above -->
+
     <!-- Camera permissions -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
@@ -46,6 +49,25 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Firebase Messaging Service declaration -->
+        <service
+            android:name="com.zinus.production.smart_production_app.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Optional: Set custom default icon and color for notifications.
+             These are used when no icon is specified in the Firebase payload. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/ic_launcher_background" /> <!-- Make sure this color exists in your colors.xml -->
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility?hl=en and

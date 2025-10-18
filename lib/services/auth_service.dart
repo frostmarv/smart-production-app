@@ -3,9 +3,6 @@ import 'dart:convert';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'http_client.dart';
 
-// 🔥 Import UserRepository untuk konsistensi
-import '../repositories/user_repository.dart';
-
 class AuthService {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
@@ -14,6 +11,7 @@ class AuthService {
   // Login dan simpan token
   static Future<Map<String, dynamic>?> login(String email, String password) async {
     try {
+      // Gunakan HttpClient terpisah (pastikan sudah ada)
       final response = await HttpClient.post('/api/auth/login', {
         'email': email,
         'password': password,
@@ -23,11 +21,9 @@ class AuthService {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_accessTokenKey, response['access_token']);
         await prefs.setString(_refreshTokenKey, response['refresh_token']);
-        // 🔥 Simpan data user saat login
         if (response.containsKey('user')) {
           await prefs.setString(_userKey, jsonEncode(response['user']));
         }
-
         return response;
       }
     } catch (e) {
@@ -36,7 +32,7 @@ class AuthService {
     return null;
   }
 
-  // Logout: hapus semua token
+  // Logout: hapus semua token dan data user
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);
@@ -68,31 +64,18 @@ class AuthService {
     return prefs.getString(_refreshTokenKey);
   }
 
-  // 🔥 GANTI: Ambil data user dari API, tapi cache jika gagal
+  // 🔥 SESUAI DENGAN authService.js: hanya baca dari cache lokal, TIDAK panggil API
   static Future<Map<String, dynamic>?> getUser() async {
-    // 1. Cek apakah user sudah login (token valid)
-    if (!await isAuthenticated()) {
-      return null;
-    }
-
-    // 2. Coba ambil dari API dulu (lebih fresh)
-    try {
-      final profile = await UserRepository.getProfile(); // ✅ Pakai repo
-      // Jika sukses, simpan ke cache
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_userKey, jsonEncode(profile));
-      return profile;
-    } catch (e) {
-      print('❌ Gagal ambil user dari API: $e');
-      // Jika gagal, coba dari cache
-      final prefs = await SharedPreferences.getInstance();
-      final userStr = prefs.getString(_userKey);
-      if (userStr != null) {
-        print('🔄 Menggunakan data user dari cache');
-        return jsonDecode(userStr);
+    final prefs = await SharedPreferences.getInstance();
+    final userStr = prefs.getString(_userKey);
+    if (userStr != null) {
+      try {
+        return jsonDecode(userStr) as Map<String, dynamic>;
+      } catch (e) {
+        print('❌ Gagal decode data user dari cache: $e');
       }
-      return null;
     }
+    return null;
   }
 
   // Refresh access token menggunakan refresh token
@@ -112,6 +95,10 @@ class AuthService {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_accessTokenKey, response['access_token']);
         await prefs.setString(_refreshTokenKey, response['refresh_token']);
+        // Opsional: jika response juga kembalikan user baru, update cache
+        if (response.containsKey('user')) {
+          await prefs.setString(_userKey, jsonEncode(response['user']));
+        }
         return true;
       }
     } catch (e) {
@@ -122,7 +109,8 @@ class AuthService {
     return false;
   }
 
-  // Cek dan refresh token jika perlu
+  // Helper untuk mendapatkan token yang valid (dengan refresh otomatis jika perlu)
+  // ⚠️ Ini adalah fitur tambahan (tidak ada di JS), tapi aman selama tidak dipakai di getUser()
   static Future<String?> getValidAccessToken() async {
     if (!await isAuthenticated()) {
       return null;
@@ -130,13 +118,12 @@ class AuthService {
 
     String? token = await getAccessToken();
 
-    // Jika token expired, coba refresh
     if (token != null && JwtDecoder.isExpired(token)) {
-      bool success = await refreshAccessToken();
+      final success = await refreshAccessToken();
       if (success) {
-        token = await getAccessToken(); // ambil token baru
+        token = await getAccessToken();
       } else {
-        return null; // refresh gagal
+        return null;
       }
     }
 
