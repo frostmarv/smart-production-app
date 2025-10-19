@@ -1,5 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart'; // ✅ Firebase core
+import 'firebase_options.dart'; // ✅ Generated via FlutterFire CLI
 
 // --- Services ---
 import 'services/environment_service.dart';
@@ -7,16 +9,29 @@ import 'services/permission_service.dart';
 
 // --- Screens ---
 import 'screens/splash_screen.dart';
-import 'screens/login_screen.dart'; // 👈 pastikan file ini ada
-import 'screens/home_pages/home/home_page_content.dart'; // Home utama setelah login
-import 'screens/home_pages/home/notification_page.dart'; // 👈 halaman notifikasi
-import 'screens/more/profile_screen.dart'; // 🔥 Tambahkan ini agar bisa navigasi ke profile
-import 'firebase_options.dart';
+import 'screens/login_screen.dart';
+import 'screens/home_pages/home/home_page_content.dart';
+import 'screens/home_pages/home/notification_page.dart';
+import 'screens/more/profile_screen.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ Solusi Final: Coba inisialisasi, jika gagal karena sudah ada, abaikan
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully.');
+  } catch (e) {
+    print('Firebase initialization error or already initialized: $e');
+  }
+
+  // ✅ Inisialisasi service tambahan
   await EnvironmentService.init();
   await PermissionService.requestInitialPermissions();
+
+  // ✅ Jalankan aplikasi
   runApp(const MyApp());
 }
 
@@ -32,14 +47,17 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      // 🔥 Gunakan initialRoute + routes
+
+      // 🔥 Rute awal
       initialRoute: '/splash',
+
+      // 🔗 Daftar route utama
       routes: {
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomePageContent(),
-        '/notifications': (context) => NotificationPage(), // ✅ Sudah ada
-        '/profile': (context) => const ProfileScreen(), // 🔥 Ditambahkan agar bisa pakai pushNamed
+        '/notifications': (context) => NotificationPage(),
+        '/profile': (context) => const ProfileScreen(),
       },
     );
   }

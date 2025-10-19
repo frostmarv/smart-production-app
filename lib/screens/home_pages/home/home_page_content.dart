@@ -63,6 +63,7 @@ class HomePageContent extends StatelessWidget {
 
                     // Jika error
                     if (snapshot.hasError) {
+                      print('❌ Error fetching user: ${snapshot.error}'); // 🔍 Debug
                       return const Text(
                         "User",
                         style: TextStyle(
@@ -75,6 +76,7 @@ class HomePageContent extends StatelessWidget {
 
                     // Jika tidak ada data
                     if (!snapshot.hasData || !(snapshot.data is Map)) {
+                      print('⚠️ No user data found in cache'); // 🔍 Debug
                       return const Text(
                         "User",
                         style: TextStyle(
@@ -86,13 +88,17 @@ class HomePageContent extends StatelessWidget {
                     }
 
                     final user = snapshot.data as Map<String, dynamic>;
-                    
-                    // 🔑 Gunakan 'name' atau 'nama' sesuai backend
-                    // Jika backend NestJS mengirim 'nama', ganti jadi user['nama']
-                    String displayName = user['name'] as String? ?? "User";
 
-                    // Opsional: log untuk debugging (hapus di production)
-                    // print('User from cache: $user');
+                    // 🔑 Gunakan 'nama' sesuai backend
+                    String displayName = user['nama'] as String? ?? "User";
+
+                    // 🔍 Debug: log data user untuk cek struktur
+                    print('🔍 Cached user: $user');
+
+                    // Jika 'nama' tidak ditemukan, log
+                    if (user['nama'] == null) {
+                      print('⚠️ Field "nama" is missing in cached user data.');
+                    }
 
                     return Text(
                       "$displayName 👋",
