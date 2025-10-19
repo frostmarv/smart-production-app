@@ -46,7 +46,7 @@ class HomePageContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // ✅ Tampilkan nama user dari cache AuthService (tanpa panggil API)
+                // ✅ Tampilkan NAMA USER dari cache AuthService (tanpa fallback ke email)
                 FutureBuilder<dynamic>(
                   future: AuthService.getUser(),
                   builder: (context, snapshot) {
@@ -61,14 +61,38 @@ class HomePageContent extends StatelessWidget {
                       );
                     }
 
-                    String displayName = "User";
-                    if (snapshot.hasData && snapshot.data is Map) {
-                      final user = snapshot.data as Map;
-                      displayName = user['name'] ??
-                                   user['email']?.split('@').first ??
-                                   "User";
+                    // Jika error
+                    if (snapshot.hasError) {
+                      return const Text(
+                        "User",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
                     }
-                    // Jika error atau tidak ada data, tetap tampilkan "User"
+
+                    // Jika tidak ada data
+                    if (!snapshot.hasData || !(snapshot.data is Map)) {
+                      return const Text(
+                        "User",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    }
+
+                    final user = snapshot.data as Map<String, dynamic>;
+                    
+                    // 🔑 Gunakan 'name' atau 'nama' sesuai backend
+                    // Jika backend NestJS mengirim 'nama', ganti jadi user['nama']
+                    String displayName = user['name'] as String? ?? "User";
+
+                    // Opsional: log untuk debugging (hapus di production)
+                    // print('User from cache: $user');
 
                     return Text(
                       "$displayName 👋",
