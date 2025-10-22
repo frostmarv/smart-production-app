@@ -1,6 +1,6 @@
 // lib/services/environment_service.dart
 class EnvironmentService {
-  static const String _defaultApiUrl = 'https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev';
+  static const String _defaultApiUrl = 'http://103.235.75.49';
   
   static Future<void> init() async {
     // No longer loading .env file
