@@ -89,7 +89,7 @@ workflows:
         BUNDLE_ID: "com.zinus.production.smartProductionApp"
         XCODE_WORKSPACE: "Runner.xcworkspace"
         XCODE_SCHEME: "Runner"
-        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
+        API_BASE_URL: "http://103.235.75.49"
       flutter: 3.24.5
       xcode: latest
       cocoapods: default
@@ -142,7 +142,7 @@ workflows:
         - app_credentials
       vars:
         PACKAGE_NAME: "com.zinus.production.smart_production_app"
-        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
+        API_BASE_URL: "http://103.235.75.49"
       flutter: 3.24.5
       java: 17
     scripts:
@@ -202,7 +202,7 @@ workflows:
       groups:
         - app_credentials
       vars:
-        API_BASE_URL: "https://74138657-bc62-468d-88d5-c86cb249f99b-00-ccopf7crimmu.worf.replit.dev"
+        API_BASE_URL: "http://103.235.75.49"
       flutter: 3.24.5
       java: 17
     triggering:
